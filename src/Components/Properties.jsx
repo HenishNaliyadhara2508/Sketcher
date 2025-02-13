@@ -1,161 +1,103 @@
 import React from "react";
-import InputNumber from "./InputNumber"; // Make sure this is a valid component
+import InputNumber from "./InputNumber"; // Ensure this is a valid component
 import Button from "./Button";
 import { RxUpdate } from "react-icons/rx";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { GrFormViewHide } from "react-icons/gr";
+import shapeStore from "../Store";  // Ensure to import shapeStore
+import { observer } from "mobx-react";
 
-const Properties = ({ selectedShape }) => {
-  const [startingPoint, setStartingPoint] = React.useState({
-    x: 1,
-    y: 1,
-    z: 1,
-  });
-  const [endingPoint, setEndingPoint] = React.useState({ x: 1, y: 1, z: 1 });
-  const [center, setCenter] = React.useState({ x: 1, y: 1, z: 1 });
-  const [radius, setRadius] = React.useState(1);
-  const [radiusX, setRadiusX] = React.useState(1);
-  const [radiusY, setRadiusY] = React.useState(1);
-
-  const updateStartingPoint = (key, value) =>
-    setStartingPoint({ ...startingPoint, [key]: value });
-  const updateEndingPoint = (key, value) =>
-    setEndingPoint({ ...endingPoint, [key]: value });
-  const updateCenter = (key, value) => setCenter({ ...center, [key]: value });
-  const updateRadius = (value) => setRadius(value);
-  const updateRadiusX = (value) => setRadiusX(value);
-  const updateRadiusY = (value) => setRadiusY(value);
+const Properties = observer(() => {
+  const selectedShape = shapeStore?.getCurrentEntity(); // Get the currently selected shape
+  
+  // Extracting points for shapes with Float32Array
+  const points = selectedShape?.geometry?.attributes?.position?.array;
+  const centerpoint = shapeStore?.getCenter();
+  const centerEllipse = shapeStore?.getCenterEllipse();
+  console.log(centerEllipse, "centerEllipse");
+  const Radius = selectedShape?.geometry?.parameters?.radius;
+  const Rx = shapeStore?.getRadiusX();
+  const Ry = shapeStore?.getRadiusY();
+  console.log(centerpoint, "centerpoint");
+  // Function to get the coordinates from the points array
+  const getCoordinates = (index) => {
+    if (points && points.length >= index * 3 + 3) {
+      return {
+        x: points[index * 3],
+        y: points[index * 3 + 1],
+        z: points[index * 3 + 2],
+      };
+    }
+    return { x: 0, y: 0, z: 0 };
+  };
 
   return (
-    <div className="rounded">
+    <div className="rounded max-h-screen overflow-y-auto">
       <div className="font-bold">Properties</div>
       {selectedShape ? (
         <>
-          <div className="mb-4">{selectedShape}</div>
+          <div className="mb-4">{selectedShape.name}</div> {/* Show shape's name */}
           <hr className="my-4" />
 
-          {selectedShape === "Line" && (
+          {/* Properties based on selected shape */}
+          {selectedShape.name === "Line" && points && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
                 <div>Starting Point</div>
-                <InputNumber
-                  label="x"
-                  onChange={(value) => updateStartingPoint("x", value)}
-                />
-                <InputNumber
-                  label="y"
-                  onChange={(value) => updateStartingPoint("y", value)}
-                />
-                <InputNumber
-                  label="z"
-                  onChange={(value) => updateStartingPoint("z", value)}
-                />
+                <InputNumber label="x" value={getCoordinates(0).x} />
+                <InputNumber label="y" value={getCoordinates(0).y} />
+                <InputNumber label="z" value={getCoordinates(0).z} />
               </div>
               <div className="flex flex-col gap-4">
                 <div>Ending Point</div>
-                <InputNumber
-                  label="x"
-                  onChange={(value) => updateEndingPoint("x", value)}
-                />
-                <InputNumber
-                  label="y"
-                  onChange={(value) => updateEndingPoint("y", value)}
-                />
-                <InputNumber
-                  label="z"
-                  onChange={(value) => updateEndingPoint("z", value)}
-                />
+                <InputNumber label="x" value={getCoordinates(1).x} />
+                <InputNumber label="y" value={getCoordinates(1).y} />
+                <InputNumber label="z" value={getCoordinates(1).z} />
               </div>
             </div>
           )}
 
-          {selectedShape === "Circle" && (
+          {selectedShape.name === "Circle" && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
                 <div>Center</div>
-                <InputNumber
-                  label="x"
-                  onChange={(value) => updateCenter("x", value)}
-                />
-                <InputNumber
-                  label="y"
-                  onChange={(value) => updateCenter("y", value)}
-                />
-                <InputNumber
-                  label="z"
-                  onChange={(value) => updateCenter("z", value)}
-                />
+                <InputNumber label="x" value={centerpoint.x}/>
+                <InputNumber label="y" value={centerpoint.y}/>
+                <InputNumber label="z" value={centerpoint.z}/>
               </div>
               <div>
-                <InputNumber label={radius} onChange={updateRadius} />
+                <div>Radius</div>
+                <InputNumber label="R" value={Radius} />
               </div>
             </div>
           )}
 
-          {selectedShape === "Ellipse" && (
+          {selectedShape.name === "Ellipse" && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
                 <div>Center</div>
-                <InputNumber
-                  label="x"
-                  onChange={(value) => updateCenter("x", value)}
-                />
-                <InputNumber
-                  label="y"
-                  onChange={(value) => updateCenter("y", value)}
-                />
-                <InputNumber
-                  label="z"
-                  onChange={(value) => updateCenter("z", value)}
-                />
+                <InputNumber label="x" value={centerEllipse.x}/>
+                <InputNumber label="y" value={centerEllipse.y}/>
+                <InputNumber label="z" value={centerEllipse.z}/>
               </div>
               <div className="flex flex-col gap-4 mb-3 w-full">
                 <div>Radius</div>
-                <InputNumber label="Rx" onChange={updateRadiusX} />
-
-                <InputNumber label="Ry" onChange={updateRadiusY} />
+                <InputNumber label="Rx" value={Rx}/>
+                <InputNumber label="Ry" value={Ry}/>
               </div>
             </div>
           )}
 
-          {selectedShape === "Polyline" && (
+          {selectedShape.name === "Polyline" && points && (
             <div>
-              <div className="flex flex-col gap-4 mb-3">
-                <div> Point 1</div>
-                <InputNumber
-                  label="x"
-                  value={startingPoint.x}
-                  onChange={(value) => updateStartingPoint("x", value)}
-                />
-                <InputNumber
-                  label="y"
-                  value={startingPoint.y}
-                  onChange={(value) => updateStartingPoint("y", value)}
-                />
-                <InputNumber
-                  label="z"
-                  value={startingPoint.z}
-                  onChange={(value) => updateStartingPoint("z", value)}
-                />
-              </div>
-              <div className="flex flex-col gap-4">
-                <div>Point n</div>
-                <InputNumber
-                  label="x"
-                  value={endingPoint.x}
-                  onChange={(value) => updateEndingPoint("x", value)}
-                />
-                <InputNumber
-                  label="y"
-                  value={endingPoint.y}
-                  onChange={(value) => updateEndingPoint("y", value)}
-                />
-                <InputNumber
-                  label="z"
-                  value={endingPoint.z}
-                  onChange={(value) => updateEndingPoint("z", value)}
-                />
-              </div>
+              {Array.from({ length: (points.length - 6 )/ 3 }).map((_, index) => (
+                <div key={index} className="flex flex-col gap-4 mb-3">
+                  <div>Point {index + 1}</div>
+                  <InputNumber label="x" value={getCoordinates(index).x} />
+                  <InputNumber label="y" value={getCoordinates(index).y} />
+                  <InputNumber label="z" value={getCoordinates(index).z} />
+                </div>
+              ))}
             </div>
           )}
 
@@ -172,6 +114,6 @@ const Properties = ({ selectedShape }) => {
       )}
     </div>
   );
-};
+});
 
 export default Properties;

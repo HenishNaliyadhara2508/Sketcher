@@ -1,19 +1,19 @@
 import * as THREE from "three";
+import shapeStore from "../Store";
 
 class Polyline {
-  constructor(scene, camera, plane) {
+  constructor(scene, camera,plane) {
     this.scene = scene;
-    this.camera = camera;
+    this.camera = shapeStore.getCamera();
     this.plane = plane;
 
-    this.mouse = new THREE.Vector2(); // Mouse position in normalized device coordinates
-    this.raycaster = new THREE.Raycaster(); // Raycaster for mouse picking
+    this.mouse = new THREE.Vector2(); 
+    this.raycaster = new THREE.Raycaster();
     this.points = []; // Store the points of the polyline
     this.isDrawing = false; // Track if a new line segment is being drawn
     this.line = null; // Store the current line object
-    this.polyline = []; // Store the lines of the polyline
+    this.polyline = null; // Store the polyline
     this.previousPoint = null; // Keep track of the last point in the polyline
-    this.spheres = []; // Store spheres created at click points
 
     // Bind event listeners
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -26,7 +26,7 @@ class Polyline {
   // Add mouse event listeners
   addEventListeners() {
     document.addEventListener(
-      "click",
+      "mousedown",
       this.handleMouseDown
     );
     document.addEventListener(
@@ -42,7 +42,7 @@ class Polyline {
   // Remove event listeners (cleanup)
   removeEventListeners() {
     document.removeEventListener(
-      "click",
+      "mousedown",
       this.handleMouseDown
     );
     document.removeEventListener(
@@ -57,7 +57,7 @@ class Polyline {
 
   // Update mouse position (from normalized device coordinates to world space)
   updateMousePosition(event) {
-    const canvas = document.querySelector("canvas"); // Use document.querySelector to select the canvas
+    const canvas = document.querySelector("canvas");
     const boundingBox = canvas.getBoundingClientRect(); // Get the bounding box of the canvas
 
     // Calculate mouse position relative to the canvas
@@ -79,23 +79,18 @@ class Polyline {
       const currentPoint = intersects[0].point;
 
       if (!this.isDrawing) {
-        // Start drawing the polyline
-        this.startNewPolyline(currentPoint); // Clear previous polyline and start a new one
-        this.points.push(currentPoint); // Add the starting point
+        // Start drawing the polyline with the first point
+        this.startNewPolyline(currentPoint);
         this.isDrawing = true;
-        this.previousPoint = currentPoint; // Set the starting point
-        this.createSphere(currentPoint); // Create a sphere at the start point
       } else {
-        // Draw a new line segment from the last point to the current point
-        this.points.push(currentPoint);
-        this.updatePolyline();
-        this.previousPoint = currentPoint; // Update the previous point
-        this.createSphere(currentPoint); // Create a sphere at the new point
+        // Add a new line segment from the last point to the current point
+        this.addLineSegment(currentPoint);
       }
+
+      this.previousPoint = currentPoint; // Update the previous point
     }
   }
 
-  // Handle mouse move event (draw line)
   handleMouseMove(event) {
     if (!this.isDrawing || !this.previousPoint) return; // Only update if a line is being drawn
 
@@ -105,70 +100,61 @@ class Polyline {
     const intersects = this.getIntersection();
     if (intersects.length > 0) {
       const currentPoint = intersects[0].point;
-      this.updateLineSegment(currentPoint); // Update the current line segment
+      this.updateLastLineSegment(currentPoint); // Update the current line segment
     }
-    
-    
   }
 
+  // Handle double-click event to finalize the polyline
   handleDoubleClick() {
-    this.isDrawing = false;
-    this.line = null; 
-    this.previousPoint = null; 
-    this.startPoint = null;
-    this.removeEventListeners();
+    this.isDrawing = false; // Stop drawing new line segments
+    shapeStore.addShape(this.polyline); // Add the final polyline to the scene
+    this.removeEventListeners(); // Remove event listeners
   }
 
-  // Start a new polyline, clearing the old points
-  startNewPolyline(currentPoint) {
-    this.points = []; // Reset the points array for the new polyline
-    this.points.push(currentPoint); // Add the first point of the new polyline
+  // Start a new polyline with the first point
+  startNewPolyline(startPoint) {
+    this.points = [startPoint]; // Start with the first point
+    this.createPolyline(); // Create the polyline object
   }
 
-  // Create a sphere at the given point
-  createSphere(position) {
-    const geometry = new THREE.SphereGeometry(0.05, 32, 32);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const sphere = new THREE.Mesh(geometry, material);
-    
-    // Apply a small Y-offset to avoid Z-fighting with the polyline
-    sphere.position.copy(position);
-    sphere.position.y += 0.1; // Apply the same Y-offset as the line
+  // Create the polyline object
+  createPolyline() {
+    const geometry = new THREE.BufferGeometry().setFromPoints(this.points);
+    const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+    this.polyline = new THREE.Line(geometry, material);
+    this.polyline.position.y = 0.5;
+    this.polyline.name = "Polyline";
+    this.scene.add(this.polyline); // Add the polyline to the scene
+  }
 
-    this.scene.add(sphere); // Add the sphere to the scene
-    this.spheres.push(sphere); // Store the sphere
+  // Add a new line segment to the polyline
+  addLineSegment(currentPoint) {
+    this.points.push(currentPoint); // Add the new point to the points array
+    this.updatePolyline(); // Update the polyline geometry with the new point
+  }
+
+  // Update the polyline's geometry with the current points
+  updatePolyline() {
+    const geometry = new THREE.BufferGeometry().setFromPoints(this.points);
+    this.polyline.geometry.dispose(); // Dispose of old geometry to free memory
+    this.polyline.geometry = geometry; // Update the geometry of the polyline
+  }
+
+  // Update the last line segment being drawn dynamically as the mouse moves
+  updateLastLineSegment(currentPoint) {
+    if (this.points.length > 0) {
+      // Update the last segment
+      this.points[this.points.length - 1] = currentPoint;
+      this.updatePolyline();
+    }
   }
 
   // Get the intersection between the mouse and the plane
   getIntersection() {
     this.raycaster.setFromCamera(this.mouse, this.camera); // Set ray origin from camera
-    return this.raycaster.intersectObject(this.plane);
-  }
-
-  // Update the current line segment being drawn
-  updateLineSegment(currentPoint) {
-    if (this.line) {
-      // If a line exists, update it to the current mouse position
-      this.line.geometry.setFromPoints([this.previousPoint, currentPoint]);
-    } else {
-      // Create a new line if no line exists yet
-      const geometry = new THREE.BufferGeometry().setFromPoints([this.previousPoint, currentPoint]);
-      const material = new THREE.LineBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide, linewidth: 5 });
-      this.line = new THREE.Line(geometry, material);
-      this.line.position.y = 0.1; // Slightly offset the line in the Y direction to avoid Z-fighting
-      this.scene.add(this.line);
-    }
-  }
-
-  // Update the polyline with new segments
-  updatePolyline() {
-    const geometry = new THREE.BufferGeometry().setFromPoints(this.points);
-    const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
-    const polyline = new THREE.Line(geometry, material);
-    polyline.position.y = 0.1; // Apply the same Y-offset as the line
-    this.scene.add(polyline);
-    this.polyline.push(polyline); // Add the new line segment to the polyline
+    return this.raycaster.intersectObject(this.plane); // Check for intersection with the plane
   }
 }
 
 export default Polyline;
+

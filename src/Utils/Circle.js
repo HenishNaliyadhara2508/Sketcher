@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import shapeStore from "../Store";
 
 export class Circle {
   constructor(scene, camera, plane) {
@@ -53,16 +54,18 @@ export class Circle {
     this.updateMousePosition(event);
 
     const intersects = this.getIntersection();
-    console.log(intersects)
+   
     if (intersects.length > 0) {
       if (!this.isDrawing) {
         // On first click, set the center point
         this.center = intersects[0].point;
+        shapeStore.setCenter(this.center);
         console.log(this.center, "center");
         this.isDrawing = true; // Set drawing state to true
       } else {
         // On second click, finalize the circle (finish drawing)
         this.radius = this.center.distanceTo(intersects[0].point);
+        shapeStore.setRadius(this.radius);
         this.updateCircle(); // Update the circle to finalize it
         this.createSphereAtCenter(); // Create a sphere at the center of the circle
         this.isDrawing = false;
@@ -88,36 +91,67 @@ export class Circle {
 
   // Get the intersection between the mouse and the plane
   getIntersection() {
-    this.raycaster.setFromCamera(this.mouse, this.camera); // Set ray origin from camera
-    return this.raycaster.intersectObject(this.plane); // Get intersection with the plane
-  }
+      if (!this.camera || !(this.camera instanceof THREE.PerspectiveCamera)) {
+        // console.error("Invalid camera type or camera is undefined", this.camera);
+        return [];
+      }
+      
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      
+      const intersects = this.raycaster.intersectObject(this.plane);
+      return intersects;
+    }
 
   // Update circle geometry with the new radius
+  // updateCircle() {
+  //   const offsetY = 0.1; // Small offset to avoid Z-fighting
+
+  //   if (this.circle) {
+  //     this.circle.geometry = new THREE.RingGeometry(
+  //       this.radius - 0.01,
+  //       this.radius,
+  //       32
+  //     );
+  //   } else {
+  //     const geometry = new THREE.RingGeometry(
+  //       this.radius - 0.01,
+  //       this.radius,
+  //       32
+  //     );
+  //     const ringMaterial = new THREE.MeshBasicMaterial({
+  //       color: 0x00ff00,
+  //       side: THREE.DoubleSide,
+  //     });
+  //     this.circle = new THREE.Mesh(geometry, ringMaterial);
+  //     this.circle.position.set(this.center.x, this.center.y + offsetY, this.center.z); // Apply the offset
+  //     this.circle.rotation.x = Math.PI / 2; // Rotate to make it lie flat on the plane
+  //     shapeStore.addShape(this.circle);
+  //     this.circle.name = "Circle";
+  //     this.scene.add(this.circle);
+  //   }
+  // }
   updateCircle() {
     const offsetY = 0.1; // Small offset to avoid Z-fighting
-
+  
     if (this.circle) {
-      this.circle.geometry = new THREE.RingGeometry(
-        this.radius - 0.01,
-        this.radius,
-        32
-      );
+      // Use CircleGeometry instead of RingGeometry
+      this.circle.geometry = new THREE.CircleGeometry(this.radius, 32);
     } else {
-      const geometry = new THREE.RingGeometry(
-        this.radius - 0.01,
-        this.radius,
-        32
-      );
-      const ringMaterial = new THREE.MeshBasicMaterial({
+      // Create a solid circle with CircleGeometry
+      const geometry = new THREE.CircleGeometry(this.radius, 32); // 32 segments for the circle
+      const material = new THREE.MeshBasicMaterial({
         color: 0x00ff00,
         side: THREE.DoubleSide,
       });
-      this.circle = new THREE.Mesh(geometry, ringMaterial);
+      this.circle = new THREE.Mesh(geometry, material);
       this.circle.position.set(this.center.x, this.center.y + offsetY, this.center.z); // Apply the offset
       this.circle.rotation.x = Math.PI / 2; // Rotate to make it lie flat on the plane
+      shapeStore.addShape(this.circle);
+      this.circle.name = "Circle";
       this.scene.add(this.circle);
     }
   }
+  
 
   // Create a sphere at the center of the circle
   createSphereAtCenter() {

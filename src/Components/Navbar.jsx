@@ -1,58 +1,51 @@
 import React from "react";
-import { FaRegSave } from "react-icons/fa";
-import { TbLine, TbOvalVertical } from "react-icons/tb";
-import { PiPolygonLight } from "react-icons/pi";
+import { TbLine } from "react-icons/tb";
 import { FaRegCircle } from "react-icons/fa";
+import { TbOvalVertical } from "react-icons/tb";
+import { PiPolygonLight } from "react-icons/pi";
+import { FaRegSave } from "react-icons/fa";
 import { FiUpload } from "react-icons/fi";
 
-// Reusable Button component
-const ShapeButton = ({ icon, label, onClick }) => {
-  return (
-    <div
-      className="btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center"
-      onClick={onClick}
-    >
-      {icon}
-      {label}
-    </div>
-  );
-};
+const Navbar = ({ onShapeSelect }) => {
 
-const Navbar = ({ setShape }) => {
-  // Prevent event propagation on click inside the Navbar
-  const handleNavbarClick = (e) => {
-    e.stopPropagation(); // Stops the event from propagating to the canvas
+  // Handle click event for navbar buttons and stop event propagation
+  const handleNavbarClick = (e, shape, icon) => {
+    e.stopPropagation(); // Stop click event propagation
+    onShapeSelect(shape, icon); // Call the passed onShapeSelect function
   };
 
   return (
-    <div
-      className="flex justify-start gap-2 h-18"
-      onClick={handleNavbarClick} // Ensure any click on the navbar doesn't propagate to canvas
-    >
+    <div className="flex justify-start gap-2 h-18">
       <div className="flex gap-2 p-2 rounded bg-gray-200">
-        {/* Shape Buttons */}
-        <ShapeButton
-          icon={<TbLine />}
-          label="Line"
-          onClick={() => setShape("line")}
-        />
-        <ShapeButton
-          icon={<FaRegCircle />}
-          label="Circle"
-          onClick={() => setShape("circle")}
-        />
-        <ShapeButton
-          icon={<TbOvalVertical />}
-          label="Ellipse"
-          onClick={() => setShape("ellipse")}
-        />
-        <ShapeButton
-          icon={<PiPolygonLight />}
-          label="Polyline"
-          onClick={() => setShape("polyline")}
-        />
+        <div
+          className="btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center"
+          onClick={(e) => handleNavbarClick(e, "Line", <TbLine />)} // Stop event propagation and pass shape and icon
+        >
+          <TbLine />
+          Line
+        </div>
+        <div
+          className="btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center"
+          onClick={(e) => handleNavbarClick(e, "Circle", <FaRegCircle />)} // Stop event propagation and pass shape and icon
+        >
+          <FaRegCircle />
+          Circle
+        </div>
+        <div
+          className="btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center"
+          onClick={(e) => handleNavbarClick(e, "Ellipse", <TbOvalVertical />)} // Stop event propagation and pass shape and icon
+        >
+          <TbOvalVertical />
+          Ellipse
+        </div>
+        <div
+          className="btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center"
+          onClick={(e) => handleNavbarClick(e, "Polyline", <PiPolygonLight />)} // Stop event propagation and pass shape and icon
+        >
+          <PiPolygonLight />
+          Polyline
+        </div>
       </div>
-
       <div className="btn bg-gray-200 hover:bg-white font-semibold px-4 flex flex-col items-center justify-center rounded">
         <FaRegSave /> Save
       </div>

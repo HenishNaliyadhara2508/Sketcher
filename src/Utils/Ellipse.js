@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import shapeStore from "../Store";
 
 class Ellipse {
   constructor(scene, camera, plane) {
@@ -51,11 +52,14 @@ class Ellipse {
     if (intersects.length > 0) {
       if (!this.isDrawing) {
         this.center = intersects[0].point;
+        shapeStore.setCenterEllipse(this.center);
         this.isDrawing = true;
       } else {
         const mousePos = intersects[0].point;
         this.radiusX = Math.abs(this.center.x - mousePos.x);
         this.radiusY = Math.abs(this.center.z - mousePos.z);
+        shapeStore.setRadiusX(this.radiusX);
+        shapeStore.setRadiusY(this.radiusY);
         this.updateEllipse();
         this.createSphereAtCenter(); // Create the sphere at the center of the ellipse
         this.isDrawing = false;
@@ -78,13 +82,16 @@ class Ellipse {
   }
 
   getIntersection() {
-    if (!this.plane) {
-      console.error("Plane not defined!");
-      return [];
+      if (!this.camera || !(this.camera instanceof THREE.PerspectiveCamera)) {
+        
+        return [];
+      }
+      
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      
+      const intersects = this.raycaster.intersectObject(this.plane);
+      return intersects;
     }
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    return this.raycaster.intersectObject(this.plane);
-  }
 
   updateEllipse() {
     if (this.ellipse) {
@@ -118,6 +125,8 @@ class Ellipse {
       this.ellipse = new THREE.LineLoop(geometryBuffer, material);
       this.ellipse.rotation.x = Math.PI * 0.5;
       this.ellipse.position.set(this.center.x, 0.1, this.center.z); // Apply the offset
+      shapeStore.addShape(this.ellipse);
+      this.ellipse.name = "Ellipse";
       this.scene.add(this.ellipse);
     }
   }
