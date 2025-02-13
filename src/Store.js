@@ -8,6 +8,7 @@ class ShapeStore {
   plane = null;
   currentEntity = null;
   center = null;
+  centerEllipse = null;
   constructor() {
     makeAutoObservable(this);
     this.selectedShape = null;  // This will hold the currently selected shape
@@ -19,12 +20,12 @@ class ShapeStore {
   }
 
   // Set the currently selected shape
-  // setSelectedShape(shape) {
+  // setCurrentShape(shape) {
   //   this.selectedShape = shape;
   // }
 
-  // // Get the currently selected shape
-  // getCurrentEntity() {
+  // // // Get the currently selected shape
+  // getCurrentShape() {
   //   return this.selectedShape;
   // }
 
@@ -33,12 +34,13 @@ class ShapeStore {
     return this.center;
   }
 
-  // setCenter(x, y, z) {
-  //   this.center = { x, y, z };
-  //   if (this.selectedShape?.updateShape) {
-  //     this.selectedShape.updateShape();
-  //   }
-  // }
+
+  setCenter(x, y, z) {
+    this.center = { x, y, z };
+    if (this.selectedShape?.updateShape) {
+      this.selectedShape.updateShape();
+    }
+  }
 
   setCenterX(x) {
     this.center.x = x;
@@ -171,11 +173,11 @@ removeEntity(shape) {
     }
   }
   
-  setCenter(center) {
+  setCenterCircle(center) {
     this.center = center;
   }
-  setCenterEllipse(center) {
-    this.center = center;
+  setCenterEllipse(centerEllipse) {
+    this.centerEllipse = centerEllipse;
   }
   // setRadius(radius) {
   //   this.radius = radius;
@@ -188,11 +190,11 @@ removeEntity(shape) {
   // setRadiusY(radiusY) {
   //   this.radiusY = radiusY;
   // }
-  // getCenter() {
-  //   return this.center;
-  // }
-  getCenterEllipse() {
+  getCenterCircle() {
     return this.center;
+  }
+  getCenterEllipse() {
+    return this.centerEllipse;
   }
   // getRadius() { 
   //   return this.radius;
@@ -210,7 +212,6 @@ removeEntity(shape) {
   }
 
   getCurrentEntity() {
-    // console.log(this.currentEntity, "currentEntity");
     return this.currentEntity;
   }
   // Method to get the camera reference (if needed)

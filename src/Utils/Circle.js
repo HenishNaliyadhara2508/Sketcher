@@ -59,7 +59,7 @@ export class Circle {
       if (!this.isDrawing) {
         // On first click, set the center point
         this.center = intersects[0].point;
-        shapeStore.setCenter(this.center);
+        shapeStore.setCenterCircle(this.center);
         console.log(this.center, "center");
         this.isDrawing = true; // Set drawing state to true
       } else {
@@ -148,6 +148,7 @@ export class Circle {
       this.circle.rotation.x = Math.PI / 2; // Rotate to make it lie flat on the plane
       shapeStore.addShape(this.circle);
       this.circle.name = "Circle";
+      this.circle.center = this.center;
       this.scene.add(this.circle);
     }
   }

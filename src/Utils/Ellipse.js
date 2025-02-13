@@ -52,7 +52,7 @@ class Ellipse {
     if (intersects.length > 0) {
       if (!this.isDrawing) {
         this.center = intersects[0].point;
-        shapeStore.setCenterEllipse(this.center);
+        // shapeStore.setCenterEllipse(this.center);
         this.isDrawing = true;
       } else {
         const mousePos = intersects[0].point;
@@ -127,6 +127,7 @@ class Ellipse {
       this.ellipse.position.set(this.center.x, 0.1, this.center.z); // Apply the offset
       shapeStore.addShape(this.ellipse);
       this.ellipse.name = "Ellipse";
+      this.ellipse.center = this.center;
       this.scene.add(this.ellipse);
     }
   }
