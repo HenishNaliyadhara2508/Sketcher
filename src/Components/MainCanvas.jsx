@@ -6,20 +6,43 @@ import Circle from "../Utils/Circle";  // Add other shapes as needed
 import Ellipse from "../Utils/Ellipse";
 import Polyline from "../Utils/Polyline";
 
-const MainCanvas = ({selectedShape}) => {
- 
+const MainCanvas = ({ selectedShape }) => {
   const canvasRef = useRef(null);
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const planeRef = useRef(null);
   const rendererRef = useRef(null);
-  const shapeDrawerRef = useRef(null);
+  const shapeDrawerRef = useRef(null); // Persist shape drawer across re-renders
+
+  // Function to initialize or update the shape
+  const createOrUpdateShape = (shapeType) => {
+    let shapeDrawer = shapeDrawerRef.current;
+
+    if (shapeDrawer) {
+      shapeDrawer.removeEventListeners(); // Remove previous listeners
+      shapeDrawer.dispose(); // Dispose the old shape (optional cleanup)
+    }
+
+    // Create a new shape depending on the selected type
+    if (shapeType === "Line") {
+      shapeDrawer = new Line(sceneRef.current, cameraRef.current, planeRef.current);
+    } else if (shapeType === "Circle") {
+      shapeDrawer = new Circle(sceneRef.current, cameraRef.current, planeRef.current);
+    } else if (shapeType === "Ellipse") {
+      shapeDrawer = new Ellipse(sceneRef.current, cameraRef.current, planeRef.current);
+    } else if (shapeType === "Polyline") {
+      shapeDrawer = new Polyline(sceneRef.current, cameraRef.current, planeRef.current);
+    }
+
+    shapeDrawer.addEventListeners(); // Add new listeners
+    shapeDrawerRef.current = shapeDrawer; // Store the reference to the shape drawer
+  };
 
   useEffect(() => {
+    // Initialize scene and camera
     if (!sceneRef.current) {
       const scene = new THREE.Scene();
       sceneRef.current = scene;
-
       shapeStore.setScene(scene);
 
       const camera = new THREE.PerspectiveCamera(
@@ -31,18 +54,15 @@ const MainCanvas = ({selectedShape}) => {
       camera.position.set(0, 5, 0);
       camera.lookAt(new THREE.Vector3(0, 0, 0));
       cameraRef.current = camera;
-
-      // Set the camera in the shapeStore
       shapeStore.setCamera(camera);  // Store the camera reference
 
       const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setClearColor(0xeeeeee);
       rendererRef.current = renderer;
-      // Store the renderer if necessary
     }
 
-    // Ensure plane is set up only once
+    // Set up the plane if not already present
     if (!planeRef.current) {
       const geometry = new THREE.PlaneGeometry(10000, 10000);
       const material = new THREE.MeshBasicMaterial({
@@ -56,52 +76,28 @@ const MainCanvas = ({selectedShape}) => {
       planeRef.current = plane;
     }
 
-    // Shape drawer setup
-    let shapeDrawer = null;
-
-    if (selectedShape === "Line") {
-      console.log(planeRef.current);
-      shapeDrawer = new Line(sceneRef.current, cameraRef.current, planeRef.current);
-    } else if (selectedShape === "Circle") {
-      shapeDrawer = new Circle(sceneRef.current, cameraRef.current, planeRef.current);
-    } else if (selectedShape === "Ellipse") {
-      shapeDrawer = new Ellipse(sceneRef.current, cameraRef.current, planeRef.current);
-    } 
-    else if(selectedShape === "Polyline") {
-      shapeDrawer = new Polyline(sceneRef.current, cameraRef.current, planeRef.current);
-      console.log(shapeDrawer, "shapeDrawer");
-    }
-
-    // Cleanup previous shape if any
-    if (shapeDrawerRef.current) {
-      shapeDrawerRef.current.removeEventListeners();  // Remove old shape listeners
-      // You can add additional cleanup logic here, if necessary
-    }
-
-    // Assign new shape to shapeDrawerRef
-    if (shapeDrawer) {
-      shapeDrawer.addEventListeners();
-      shapeDrawerRef.current = shapeDrawer;
-    }
+    // Call the function to create or update the shape based on the selectedShape prop
+    createOrUpdateShape(selectedShape);
 
     // Animation loop
     const animate = () => {
-      requestAnimationFrame(animate);
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
+      if (rendererRef.current && sceneRef.current && cameraRef.current) {
+        requestAnimationFrame(animate);
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
     };
 
     animate();
 
+    // Cleanup on component unmount or when selectedShape changes
     return () => {
-      // Cleanup shape on component unmount or selectedShape change
       if (shapeDrawerRef.current) {
         shapeDrawerRef.current.removeEventListeners();
-        shapeDrawerRef.current = null;
+        shapeDrawerRef.current = null; // Nullify the reference to cleanup resources
       }
-
-      // Additional cleanup can be done here if necessary (e.g., disposing resources)
+      // Additional cleanup if necessary (disposing resources, etc.)
     };
-  }, [selectedShape]);  // Re-run if the selected shape changes
+  }, [selectedShape]); // Re-run only if selectedShape changes
 
   return <canvas ref={canvasRef} className="webgl" />;
 };

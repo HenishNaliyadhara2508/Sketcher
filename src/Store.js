@@ -1,44 +1,148 @@
 import { runInAction } from 'mobx';
-// shapeStore.js
 import { makeAutoObservable } from "mobx";
 
 class ShapeStore {
   shapes = [];
-  camera = null; // Initialize camera as null
+  camera = null;
   plane = null;
   currentEntity = null;
   center = null;
   centerEllipse = null;
+  ellipsesRadiusXY = [];
   constructor() {
     makeAutoObservable(this);
-    this.selectedShape = null;  // This will hold the currently selected shape
-    this.center = { x: 0, y: 0, z: 0 };  // Default center
-    this.radius = 0;  // Default radius
-    this.radiusX = 0; // For Ellipse (X radius)
-    this.radiusY = 0; // For Ellipse (Y radius)
-    this.points = []; // Array for line/polyline points
+    this.selectedShape = null;
+    this.center = { x: 0, y: 0, z: 0 };
+    this.radius = 0;
+    this.radiusX = 0;
+    this.radiusY = 0;
+    this.points = [];
   }
 
-  // Set the currently selected shape
-  // setCurrentShape(shape) {
-  //   this.selectedShape = shape;
-  // }
-
-  // // // Get the currently selected shape
-  // getCurrentShape() {
-  //   return this.selectedShape;
-  // }
-
-  // Get and set methods for center
-  getCenter() {
-    return this.center;
+  setCenter(center) {
+    if (this.selectedShape) {
+      this.selectedShape.center = center; // update center in shape object
+      this.center = center; // update central coordinates in store
+      this.updateShape(); // call updateShape for the shape
+    }
   }
 
+  setRadius(radius) {
+    if (this.selectedShape?.name === "Circle") {
+      this.selectedShape.radius = radius;
+      this.radius = radius;
+      this.updateShape(); // Update the circle
+    } else if (this.selectedShape?.name === "Ellipse") {
+      this.selectedShape.radiusX = radius;
+      this.selectedShape.radiusY = radius;
+      this.radiusX = radius;
+      this.radiusY = radius;
+      this.updateShape(); // Update the ellipse
+    }
+  }
 
-  setCenter(x, y, z) {
-    this.center = { x, y, z };
-    if (this.selectedShape?.updateShape) {
-      this.selectedShape.updateShape();
+  setRadiusX(radiusX) {
+    if (this.selectedShape?.name === "Ellipse") {
+      this.selectedShape.radiusX = radiusX;
+      this.radiusX = radiusX;
+      this.updateShape();
+    }
+  }
+
+  setRadiusY(radiusY) {
+    if (this.selectedShape?.name === "Ellipse") {
+      this.selectedShape.radiusY = radiusY;
+      this.radiusY = radiusY;
+      this.updateShape();
+    }
+  }
+
+  updateShape() {
+    if (this.selectedShape?.geometry) {
+      this.selectedShape.geometry.attributes.position.needsUpdate = true;
+      if (this.selectedShape.name === "Circle") {
+        this.selectedShape.updateCircle();
+      } else if (this.selectedShape.name === "Ellipse") {
+        this.selectedShape.updateEllipse();
+      }
+    }
+  }
+
+  setCurrentEntity(entity) {
+    this.currentEntity = entity;
+    this.selectedShape = entity;
+  }
+
+  getCurrentEntity() {
+    return this.currentEntity;
+  }
+
+  createEllipse(center, radiusX, radiusY) {
+    const newEllipse = {
+      center,
+      radiusX,
+      radiusY,
+      uuid: this.generateUUID(),
+    };
+    this.shapes.push(newEllipse);
+  }
+
+  updateEllipseRadius(uuid, radiusX, radiusY) {
+    const ellipse = this.shapes.find(shape => shape.uuid === uuid);
+    if (ellipse) {
+      ellipse.radiusX = radiusX;
+      ellipse.radiusY = radiusY;
+    }
+  }
+
+  setEllipseRadius(uuid, radiusX, radiusY) {
+    // Check if the ellipse already exists in the array by uuid
+    const existingEllipse = this.ellipsesRadiusXY.find(
+      (ellipse) => ellipse.uuid === uuid
+    );
+
+    if (existingEllipse) {
+      // If ellipse exists, update the radii
+      existingEllipse.radiusX = radiusX;
+      existingEllipse.radiusY = radiusY;
+    } else {
+      // If ellipse does not exist, add a new entry
+      this.ellipsesRadiusXY.push({ uuid, radiusX, radiusY });
+    }
+  }
+
+  // Get method to retrieve ellipse radii using uuid
+  getEllipseRadius(uuid) {
+    const ellipse = this.ellipsesRadiusXY.find(
+      (ellipse) => ellipse.uuid === uuid
+    );
+    return ellipse ? [ellipse.radiusX, ellipse.radiusY] : null; // Return radii or null if not found
+  }
+
+  // Optional: To remove an ellipse's data by uuid
+  removeEllipseData(uuid) {
+    this.ellipsesRadiusXY = this.ellipsesRadiusXY.filter(
+      (ellipse) => ellipse.uuid !== uuid
+    );
+  }
+
+  generateUUID() {
+    return 'xxxx-xxxx-4xxx-yxxx-xxxx-xxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  getEllipseData(uuid) {
+    const ellipse = this.shapes.find(shape => shape.uuid === uuid);
+    return ellipse ? { center: ellipse.center, radiusX: ellipse.radiusX, radiusY: ellipse.radiusY } : null;
+  }
+
+  setEllipseCenter(uuid, center) {
+    const ellipse = this.shapes.find(shape => shape.uuid === uuid);
+    if (ellipse) {
+      ellipse.center = center;
     }
   }
 
@@ -63,51 +167,22 @@ class ShapeStore {
     }
   }
 
-  // Get and set methods for radius
   getRadius() {
     return this.radius;
   }
 
-  setRadius(radius) {
-    this.radius = radius;
-    if (this.selectedShape?.updateShape) {
-      this.selectedShape.updateShape();
-    }
+  getRadiusX() {
+    return this.radiusX;
   }
 
-  setRadiusX(radiusX) {
-    this.radiusX = radiusX;
-    if (this.selectedShape?.updateShape) {
-      this.selectedShape.updateShape();
-    }
+  getRadiusY() {
+    return this.radiusY;
   }
 
-  setRadiusY(radiusY) {
-    this.radiusY = radiusY;
-    if (this.selectedShape?.updateShape) {
-      this.selectedShape.updateShape();
-    }
+  getCenter() {
+    return this.center;
   }
 
-  // Update points for Line, Polyline, etc.
-  updateShapePoints(shape, points) {
-    shape.geometry.attributes.position.array = points;
-    shape.geometry.attributes.position.needsUpdate = true; // Notify Three.js that geometry has changed
-    if (shape.updateShape) {
-      shape.updateShape();
-    }
-  }
-
-  // Update the currently selected shape's geometry (if necessary)
-  updateShape() {
-    if (this.selectedShape?.name === "Circle") {
-      this.selectedShape.updateCircle();  // Update circle based on radius and center
-    } else if (this.selectedShape?.name === "Ellipse") {
-      this.selectedShape.updateEllipse();  // Update ellipse based on Rx, Ry, and center
-    }
-  }
-
-  // Method to set points for Polyline (update an individual point)
   setPoint(index, x, y, z) {
     if (this.selectedShape && this.selectedShape.geometry && this.selectedShape.geometry.attributes) {
       const pointsArray = this.selectedShape.geometry.attributes.position.array;
@@ -115,11 +190,22 @@ class ShapeStore {
       pointsArray[pointIndex] = x;
       pointsArray[pointIndex + 1] = y;
       pointsArray[pointIndex + 2] = z;
-      this.updateShapePoints(this.selectedShape, pointsArray);  // Trigger shape update
+      this.updateShapePoints(this.selectedShape, pointsArray);
     }
   }
 
-  // Method to set the camera reference
+  updateShapePoints(shape, points) {
+    if (shape.geometry && shape.geometry.attributes.position) {
+      shape.geometry.attributes.position.array = points;
+      shape.geometry.attributes.position.needsUpdate = true;
+
+      // Update the shape if necessary
+      if (shape.updateShape) {
+        shape.updateShape();
+      }
+    }
+  }
+
   setCamera(camera) {
     this.camera = camera;
   }
@@ -133,34 +219,26 @@ class ShapeStore {
     this.plane = plane;
   }
 
-  // Method to add shapes to the store
   addShape(shape) {
     this.shapes.push(shape);
   }
 
+  removeEntity(shape) {
+    const removedShape = this.shapes.find((s) => s.uuid === shape.uuid);
+    this.removeEllipseData(shape);
 
-removeEntity(shape) {
-  const removedShape = this.shapes.find((s) => s.uuid === shape.uuid);
-
-  if (removedShape) {
-    // Remove from the scene
-    if (this.scene) {
-      // console.log("Removing shape from scene1...",this.scene);
-      this.scene.remove(removedShape); // Actually remove it from the scene
+    if (removedShape) {
+      if (this.scene) {
+        this.scene.remove(removedShape);
+      }
+      this.disposeShape(removedShape);
+      runInAction(() => {
+        this.shapes = this.shapes.filter((s) => s.uuid !== shape.uuid);
+      });
+    } else {
+      console.error("Shape not found in the scene or shapes array.");
     }
-
-    // Dispose of the shape's resources
-    this.disposeShape(removedShape);
-
-    // Update MobX state in a transactional way
-    runInAction(() => {
-      this.shapes = this.shapes.filter((s) => s.uuid !== shape.uuid);
-    });
-    console.log(this.scene, "sceneAfter");
-  } else {
-    console.error("Shape not found in the scene or shapes array.");
   }
-}
 
   disposeShape(shape) {
     if (shape.geometry) {
@@ -172,52 +250,27 @@ removeEntity(shape) {
       console.log('Material disposed:', shape.material);
     }
   }
-  
+
   setCenterCircle(center) {
     this.center = center;
   }
+
   setCenterEllipse(centerEllipse) {
     this.centerEllipse = centerEllipse;
   }
-  // setRadius(radius) {
-  //   this.radius = radius;
-  // }
 
-  // setRadiusX(radiusX) {
-  //   this.radiusX = radiusX;
-  // }
-
-  // setRadiusY(radiusY) {
-  //   this.radiusY = radiusY;
-  // }
   getCenterCircle() {
     return this.center;
   }
+
   getCenterEllipse() {
     return this.centerEllipse;
   }
-  // getRadius() { 
-  //   return this.radius;
-  // }
-  getRadiusX() {
-    return this.radiusX;
-  }
 
-  getRadiusY() {
-    return this.radiusY;
-  }
-
-  setCurrentEntity(entity) {
-    this.currentEntity = entity;
-  }
-
-  getCurrentEntity() {
-    return this.currentEntity;
-  }
-  // Method to get the camera reference (if needed)
   getCamera() {
     return this.camera;
   }
+
   getPlane() {
     return this.plane;
   }

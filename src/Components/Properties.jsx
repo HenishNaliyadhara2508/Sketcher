@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import * as THREE from "three";
 import InputNumber from "./InputNumber"; // Ensure this is a valid component
 import Button from "./Button";
 import { RxUpdate } from "react-icons/rx";
@@ -6,25 +7,29 @@ import { RiDeleteBinLine } from "react-icons/ri";
 import { GrFormViewHide } from "react-icons/gr";
 import shapeStore from "../Store"; // Ensure to import shapeStore
 import { observer } from "mobx-react";
+import ColorComponent from "./ColorComponent";
 
 const Properties = observer(() => {
   const selectedShape = shapeStore?.getCurrentEntity(); // Get the currently selected shape
-
+  const EllipseRadiusXY = shapeStore?.getEllipseRadius(selectedShape?.uuid)
   // Extracting points for shapes with Float32Array
   const points = selectedShape?.geometry?.attributes?.position?.array;
-  const centerpoint = selectedShape?.center;
+  const centerCircle = selectedShape?.center;
+  const centerEllipse = selectedShape?.center;
   const Radius = selectedShape?.geometry?.parameters?.radius;
-  const Rx = shapeStore?.getRadiusX();
-  const Ry = shapeStore?.getRadiusY();
+  const Rx = EllipseRadiusXY?.[0];
+  const Ry = EllipseRadiusXY?.[1];
 
-  // Initialize temporary coordinates state dynamically based on points length
   const [tempCoordinates, setTempCoordinates] = useState([]);
-  const [centerCoordinates, setCenterCoordinates] = useState({ x: 0, y: 0, z: 0 });
+  const [centerCoordinates, setCenterCoordinates] = useState({
+    x: 0,
+    y: 0,
+    z: 0,
+  });
   const [radius, setRadius] = useState(0);
   const [radiusX, setRadiusX] = useState(0);
   const [radiusY, setRadiusY] = useState(0);
 
-  // Function to get the coordinates from the points array
   const getCoordinates = (index) => {
     if (points && points.length >= index * 3 + 3) {
       return {
@@ -36,7 +41,6 @@ const Properties = observer(() => {
     return { x: 0, y: 0, z: 0 };
   };
 
-  // Set initial coordinates in state when selectedShape or points change
   useEffect(() => {
     if (selectedShape && points) {
       const initialCoordinates = [];
@@ -47,96 +51,138 @@ const Properties = observer(() => {
     }
 
     if (selectedShape?.name === "Circle" || selectedShape?.name === "Ellipse") {
-      setCenterCoordinates({
-        x: centerpoint?.x || 0,
-        y: centerpoint?.y || 0,
-        z: centerpoint?.z || 0,
-      });
       if (selectedShape?.name === "Circle") {
+        setCenterCoordinates({
+          x: centerCircle?.x || 0,
+          y: centerCircle?.y || 0,
+          z: centerCircle?.z || 0,
+        });
         setRadius(Radius || 0);
       } else if (selectedShape?.name === "Ellipse") {
+        setCenterCoordinates({
+          x: centerEllipse?.x || 0,
+          y: centerEllipse?.y || 0,
+          z: centerEllipse?.z || 0,
+        });
         setRadiusX(Rx || 0);
         setRadiusY(Ry || 0);
       }
     }
-  }, [selectedShape, points, centerpoint, Radius, Rx, Ry]);
+  }, [selectedShape, points, centerCircle, centerEllipse, Radius, Rx, Ry]);
 
-  // Handlers to update shape properties when input values change
-  const handleCoordinateChange = (index, axis, newValue) => {
-    const floatValue = parseFloat(newValue); // Convert the input to a number
+  const handleCoordinateChange = useCallback(
+    (index, axis, newValue) => {
+      const floatValue = parseFloat(newValue);
 
-    // Ensure the value is a valid number
-    if (isNaN(floatValue)) return; // Do not update if it's not a valid number
+      if (isNaN(floatValue) && newValue !== "") return;
 
-    const updatedCoordinates = [...tempCoordinates];
+      const updatedCoordinates = [...tempCoordinates];
+      updatedCoordinates[index][axis] = isNaN(floatValue) ? 0 : floatValue;
 
-    // Update the respective point's coordinate based on the axis (x, y, z)
-    updatedCoordinates[index][axis] = floatValue;
+      setTempCoordinates(updatedCoordinates);
+    },
+    [tempCoordinates]
+  );
 
-    setTempCoordinates(updatedCoordinates); // Set updated coordinates in the temporary state
-  };
+  const handleChangeCenter = useCallback((axis, value) => {
+    const floatValue = parseFloat(value);
 
-  const handleChangeCenter = (axis, value) => {
-    console.log(axis, value);
-    const floatValue = parseFloat(value);  // Convert input to a number
-    
-    if (isNaN(floatValue)) return;  // If the value is invalid (NaN), return
-  
-    // Update the center values for Circle or Ellipse in shapeStore
-    if (selectedShape?.name === "Circle" || selectedShape?.name === "Ellipse") {
-      setCenterCoordinates(prev => {
+    if (value === "") {
+      setCenterCoordinates((prev) => {
+        const updatedCenter = { ...prev };
+        updatedCenter[axis] = 0;
+        return updatedCenter;
+      });
+      shapeStore.setCenter(axis, 0);
+    } else if (!isNaN(floatValue)) {
+      setCenterCoordinates((prev) => {
         const updatedCenter = { ...prev };
         updatedCenter[axis] = floatValue;
         return updatedCenter;
       });
-  
-      // Optionally, trigger update on shape to reflect the change
-      selectedShape?.updateShape();
+      shapeStore.setCenter(axis, floatValue);
     }
-  };
-  
-  const handleChangeRadius = (value, isX = false) => {
-    const floatValue = parseFloat(value);  // Convert input to a number
-    
-    if (isNaN(floatValue)) return;  // If the value is invalid (NaN), return
-    
-    // Update radius for Circle or Ellipse in shapeStore
-    if (selectedShape?.name === "Circle") {
+  }, []);
+
+  const handleChangeCircleRadius = useCallback((value) => {
+    const floatValue = parseFloat(value);
+
+    if (value === "") {
+      setRadius(0);
+      shapeStore.setRadius(0);
+    } else if (!isNaN(floatValue)) {
       setRadius(floatValue);
-      shapeStore.setRadius(floatValue);  // Update Radius for Circle
-      selectedShape?.updateShape();  // Optionally trigger update for shape
-    } else if (selectedShape?.name === "Ellipse") {
+      shapeStore.setRadius(floatValue);
+    }
+  }, []);
+
+  const handleChangeRadius = useCallback((value, isX = false) => {
+    const floatValue = parseFloat(value);
+
+    if (value === "") {
+      if (isX) {
+        setRadiusX(0);
+        shapeStore.setRadiusX(0);
+      } else {
+        setRadiusY(0);
+        shapeStore.setRadiusY(0);
+      }
+    } else if (!isNaN(floatValue)) {
       if (isX) {
         setRadiusX(floatValue);
-        shapeStore.setRadiusX(floatValue);  // Update Rx for Ellipse
+        shapeStore.setRadiusX(floatValue);
       } else {
         setRadiusY(floatValue);
-        shapeStore.setRadiusY(floatValue);  // Update Ry for Ellipse
+        shapeStore.setRadiusY(floatValue);
       }
-      selectedShape?.updateShape();  // Optionally trigger update for shape
     }
-  };
-  
+  }, []);
 
-  const handleUpdate = () => {
-    // Flatten the updated coordinates into a single array for polyline
-    const updatedPoints = tempCoordinates.flatMap((point) => [
-      point.x, point.y, point.z,
-    ]);
+ 
+  const handleUpdate = useCallback(() => {
+    console.log("Update clicked");
 
-    // Update the points in shape's geometry
-    shapeStore.updateShapePoints(selectedShape, updatedPoints);
-  };
+    if (selectedShape && selectedShape.geometry) {
+      const geometry = selectedShape.geometry;
+      const updatedPoints = tempCoordinates.flatMap((point) => [
+        point.x,
+        point.y,
+        point.z,
+      ]);
+
+      const pointsChanged =
+        updatedPoints.length !== geometry.attributes.position.array.length ||
+        updatedPoints.some(
+          (value, index) => value !== geometry.attributes.position.array[index]
+        );
+
+      if (pointsChanged) {
+        const newPositionAttribute = new THREE.BufferAttribute(
+          new Float32Array(updatedPoints),
+          3
+        );
+
+        geometry.setAttribute("position", newPositionAttribute);
+        geometry.attributes.position.needsUpdate = true;
+        console.log("Geometry updated.");
+      } else {
+        console.log("No changes detected. Skipping update.");
+      }
+    } else {
+      console.log("Selected shape or geometry not found.");
+    }
+  }, [tempCoordinates, selectedShape]);
 
   return (
     <div className="rounded max-h-screen overflow-y-scroll">
       <div className="font-bold">Properties</div>
+
       {selectedShape ? (
         <>
-          <div className="mb-4">{selectedShape.name}</div>{" "}
-          {/* Show shape's name */}
+          <div className="mb-4">{selectedShape.name}</div>
+
           <hr className="my-4" />
-          {/* Properties based on selected shape */}
+
           {selectedShape.name === "Line" && points && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
@@ -190,26 +236,27 @@ const Properties = observer(() => {
               </div>
             </div>
           )}
-          {selectedShape?.name === "Circle" && (
+
+          {selectedShape.name === "Circle" && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
                 <div>Center</div>
                 <InputNumber
                   label="x"
                   value={centerCoordinates.x || 0}
-                  onChange={(e) => handleChangeCenter("x", e.target.value)}
+                  onChange={(newValue) => handleChangeCenter("x", newValue)}
                   allowClear={false}
                 />
                 <InputNumber
                   label="y"
                   value={centerCoordinates.y || 0}
-                  onChange={(e) => handleChangeCenter("y", e.target.value)}
+                  onChange={(newValue) => handleChangeCenter("y", newValue)}
                   allowClear={false}
                 />
                 <InputNumber
                   label="z"
                   value={centerCoordinates.z || 0}
-                  onChange={(e) => handleChangeCenter("z", e.target.value)}
+                  onChange={(newValue) => handleChangeCenter("z", newValue)}
                   allowClear={false}
                 />
               </div>
@@ -218,7 +265,7 @@ const Properties = observer(() => {
                 <InputNumber
                   label="R"
                   value={radius || 0}
-                  onChange={(e) => handleChangeRadius(e.target.value)}
+                  onChange={handleChangeCircleRadius}
                   allowClear={false}
                 />
               </div>
@@ -232,19 +279,19 @@ const Properties = observer(() => {
                 <InputNumber
                   label="x"
                   value={centerCoordinates.x || 0}
-                  onChange={(e) => handleChangeCenter("x", e.target.value)}
+                  onChange={(newValue) => handleChangeCenter("x", newValue)}
                   allowClear={false}
                 />
                 <InputNumber
                   label="y"
                   value={centerCoordinates.y || 0}
-                  onChange={(e) => handleChangeCenter("y", e.target.value)}
+                  onChange={(newValue) => handleChangeCenter("y", newValue)}
                   allowClear={false}
                 />
                 <InputNumber
                   label="z"
                   value={centerCoordinates.z || 0}
-                  onChange={(e) => handleChangeCenter("z", e.target.value)}
+                  onChange={(newValue) => handleChangeCenter("z", newValue)}
                   allowClear={false}
                 />
               </div>
@@ -253,13 +300,13 @@ const Properties = observer(() => {
                 <InputNumber
                   label="Rx"
                   value={radiusX || 0}
-                  onChange={(e) => handleChangeRadius(e.target.value, true)}
+                  onChange={(newValue) => handleChangeRadius(newValue, true)}
                   allowClear={false}
                 />
                 <InputNumber
                   label="Ry"
                   value={radiusY || 0}
-                  onChange={(e) => handleChangeRadius(e.target.value, false)}
+                  onChange={(newValue) => handleChangeRadius(newValue, false)}
                   allowClear={false}
                 />
               </div>
@@ -268,41 +315,42 @@ const Properties = observer(() => {
 
           {selectedShape.name === "Polyline" && points && (
             <div>
-              {tempCoordinates.map((point, index) => (
-                <div key={index} className="flex flex-col gap-4 mb-3">
-                  <div>Point {index + 1}</div>
+              {tempCoordinates
+                .slice(0, tempCoordinates.length - 2)
+                .map((point, index) => (
+                  <div key={index} className="flex flex-col gap-4 mb-3">
+                    <div>Point {index + 1}</div>
 
-                  <InputNumber
-                    label="x"
-                    value={point.x}
-                    onChange={(newValue) =>
-                      handleCoordinateChange(index, "x", newValue)
-                    }
-                  />
-                  <InputNumber
-                    label="y"
-                    value={point.y}
-                    onChange={(newValue) =>
-                      handleCoordinateChange(index, "y", newValue)
-                    }
-                  />
-                  <InputNumber
-                    label="z"
-                    value={point.z}
-                    onChange={(newValue) =>
-                      handleCoordinateChange(index, "z", newValue)
-                    }
-                  />
-                </div>
-              ))}
+                    <InputNumber
+                      label="x"
+                      value={point.x}
+                      onChange={(newValue) =>
+                        handleCoordinateChange(index, "x", newValue)
+                      }
+                    />
+                    <InputNumber
+                      label="y"
+                      value={point.y}
+                      onChange={(newValue) =>
+                        handleCoordinateChange(index, "y", newValue)
+                      }
+                    />
+                    <InputNumber
+                      label="z"
+                      value={point.z}
+                      onChange={(newValue) =>
+                        handleCoordinateChange(index, "z", newValue)
+                      }
+                    />
+                  </div>
+                ))}
             </div>
           )}
 
           <Button icon={<RxUpdate />} name="Update" onClick={handleUpdate} />
-          <div>Color</div>
-          <div>
-            <input type="color" />
-          </div>
+          
+          <ColorComponent />
+          
           <Button icon={<GrFormViewHide />} name="Hide" />
           <Button icon={<RiDeleteBinLine />} name="Delete" />
         </>

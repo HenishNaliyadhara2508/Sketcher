@@ -1,13 +1,14 @@
+import React from "react";
 
-import React from 'react'
-
-const Button = ({ icon, name }) => {
+const Button = ({ icon, name, onClick }) => {
   return (
-    <button className='flex gap-2 btn bg-gray-100 w-full justify-center hover:bg-white border border-gray-300 font-semibold py-2 px-4 rounded my-3'>
+    <button
+      className="flex gap-2 btn bg-gray-100 w-full justify-center hover:bg-white border border-gray-300 font-semibold py-2 px-4 rounded my-3"
+      onClick={onClick}
+    >
       {icon} {name}
     </button>
-  )
-}
+  );
+};
 
-export default Button
-
+export default Button;

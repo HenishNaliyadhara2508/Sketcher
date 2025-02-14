@@ -102,34 +102,7 @@ export class Circle {
       return intersects;
     }
 
-  // Update circle geometry with the new radius
-  // updateCircle() {
-  //   const offsetY = 0.1; // Small offset to avoid Z-fighting
-
-  //   if (this.circle) {
-  //     this.circle.geometry = new THREE.RingGeometry(
-  //       this.radius - 0.01,
-  //       this.radius,
-  //       32
-  //     );
-  //   } else {
-  //     const geometry = new THREE.RingGeometry(
-  //       this.radius - 0.01,
-  //       this.radius,
-  //       32
-  //     );
-  //     const ringMaterial = new THREE.MeshBasicMaterial({
-  //       color: 0x00ff00,
-  //       side: THREE.DoubleSide,
-  //     });
-  //     this.circle = new THREE.Mesh(geometry, ringMaterial);
-  //     this.circle.position.set(this.center.x, this.center.y + offsetY, this.center.z); // Apply the offset
-  //     this.circle.rotation.x = Math.PI / 2; // Rotate to make it lie flat on the plane
-  //     shapeStore.addShape(this.circle);
-  //     this.circle.name = "Circle";
-  //     this.scene.add(this.circle);
-  //   }
-  // }
+ 
   updateCircle() {
     const offsetY = 0.1; // Small offset to avoid Z-fighting
   

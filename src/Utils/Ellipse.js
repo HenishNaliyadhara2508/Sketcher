@@ -10,8 +10,8 @@ class Ellipse {
     this.mouse = new THREE.Vector2();
     this.raycaster = new THREE.Raycaster();
     this.center = null;
-    this.radiusX = 0;
-    this.radiusY = 0;
+    this.radiusX = 0; // Local radiusX for this ellipse instance
+    this.radiusY = 0; // Local radiusY for this ellipse instance
     this.ellipse = null;
     this.isDrawing = false;
 
@@ -52,12 +52,13 @@ class Ellipse {
     if (intersects.length > 0) {
       if (!this.isDrawing) {
         this.center = intersects[0].point;
-        // shapeStore.setCenterEllipse(this.center);
         this.isDrawing = true;
       } else {
         const mousePos = intersects[0].point;
         this.radiusX = Math.abs(this.center.x - mousePos.x);
         this.radiusY = Math.abs(this.center.z - mousePos.z);
+        shapeStore.setEllipseRadius(this.uuid, this.radiusX, this.radiusY);
+        // Update the shapeStore only after ellipse is drawn
         shapeStore.setRadiusX(this.radiusX);
         shapeStore.setRadiusY(this.radiusY);
         this.updateEllipse();
@@ -69,6 +70,7 @@ class Ellipse {
     }
   }
 
+  
   handleMouseMove(event) {
     if (!this.isDrawing || !this.center) return;
     this.updateMousePosition(event);
@@ -82,16 +84,15 @@ class Ellipse {
   }
 
   getIntersection() {
-      if (!this.camera || !(this.camera instanceof THREE.PerspectiveCamera)) {
-        
-        return [];
-      }
-      
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      
-      const intersects = this.raycaster.intersectObject(this.plane);
-      return intersects;
+    if (!this.camera || !(this.camera instanceof THREE.PerspectiveCamera)) {
+      return [];
     }
+
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+
+    const intersects = this.raycaster.intersectObject(this.plane);
+    return intersects;
+  }
 
   updateEllipse() {
     if (this.ellipse) {
@@ -128,6 +129,10 @@ class Ellipse {
       shapeStore.addShape(this.ellipse);
       this.ellipse.name = "Ellipse";
       this.ellipse.center = this.center;
+      this.ellipse.radiusX = this.radiusX;
+      this.ellipse.radiusY = this.radiusY;
+
+      this.uuid = this.ellipse.uuid;
       this.scene.add(this.ellipse);
     }
   }
