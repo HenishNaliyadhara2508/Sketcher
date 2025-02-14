@@ -1,5 +1,8 @@
 import { runInAction } from 'mobx';
 import { makeAutoObservable } from "mobx";
+import Circle from './Utils/Circle';
+import Ellipse from './Utils/Ellipse';
+
 
 class ShapeStore {
   shapes = [];
@@ -20,12 +23,19 @@ class ShapeStore {
   }
 
   setCenter(center) {
+    // Check if there's a selected shape
     if (this.selectedShape) {
-      this.selectedShape.center = center; // update center in shape object
-      this.center = center; // update central coordinates in store
-      this.updateShape(); // call updateShape for the shape
+      // Update the center of the shape
+      this.selectedShape.center = center;
+      this.center = center;
+  
+      // Update the shape
+      this.updateShape();
+    } else {
+      console.error("No shape selected. Cannot update center.");
     }
   }
+  
 
   setRadius(radius) {
     if (this.selectedShape?.name === "Circle") {
@@ -58,19 +68,29 @@ class ShapeStore {
   }
 
   updateShape() {
-    if (this.selectedShape?.geometry) {
-      this.selectedShape.geometry.attributes.position.needsUpdate = true;
-      if (this.selectedShape.name === "Circle") {
-        this.selectedShape.updateCircle();
-      } else if (this.selectedShape.name === "Ellipse") {
+    console.log("Updating shape: ", this.selectedShape);
+  
+    if (this.selectedShape) {
+      if (this.selectedShape.updateEllipse) {
+        console.log("Updating Ellipse");
         this.selectedShape.updateEllipse();
+      } else if (this.selectedShape.updateCircle) {
+        console.log("Updating Circle");
+        this.selectedShape.updateCircle();
+      } else {
+        console.error("Selected shape does not have update method: ", this.selectedShape);
       }
+    } else {
+      console.error("No shape selected.");
     }
   }
+  
 
   setCurrentEntity(entity) {
     this.currentEntity = entity;
     this.selectedShape = entity;
+    console.log(this.selectedShape, "selected shape");
+    
   }
 
   getCurrentEntity() {
@@ -109,6 +129,10 @@ class ShapeStore {
       // If ellipse does not exist, add a new entry
       this.ellipsesRadiusXY.push({ uuid, radiusX, radiusY });
     }
+  }
+
+  getAllEntities() {
+    return this.shapes.map(shape => shape.mesh);
   }
 
   // Get method to retrieve ellipse radii using uuid

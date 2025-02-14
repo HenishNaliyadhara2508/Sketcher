@@ -137,7 +137,7 @@ const SearchBar = observer(() => {
                       {shape.visible ? (
                         <IoEyeOutline
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent triggering handleShapeClick
+                            e.stopPropagation(); 
                             toggleVisibility(shape);
                           }}
                         />

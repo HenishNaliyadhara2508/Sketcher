@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import shapeStore from "../Store";
 import Line from "../Utils/Line";
@@ -13,6 +13,9 @@ const MainCanvas = ({ selectedShape }) => {
   const planeRef = useRef(null);
   const rendererRef = useRef(null);
   const shapeDrawerRef = useRef(null); // Persist shape drawer across re-renders
+
+  const [mouse] = useState(new THREE.Vector2()); // To store mouse coordinates
+  const raycaster = useRef(new THREE.Raycaster()); // Raycaster instance
 
   // Function to initialize or update the shape
   const createOrUpdateShape = (shapeType) => {
@@ -34,8 +37,27 @@ const MainCanvas = ({ selectedShape }) => {
       shapeDrawer = new Polyline(sceneRef.current, cameraRef.current, planeRef.current);
     }
 
-    shapeDrawer.addEventListeners(); // Add new listeners
-    shapeDrawerRef.current = shapeDrawer; // Store the reference to the shape drawer
+    shapeDrawer.addEventListeners(); 
+    shapeDrawerRef.current = shapeDrawer; 
+  };
+
+  const handleMouseClick = (event) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Update the raycaster's position
+    raycaster.current.update(); 
+
+    // Cast the ray to see which object is intersected
+    const intersects = raycaster.current.intersectObjects(shapeStore.getAllEntities());
+    console.log(shapeStore.getAllEntities(), "shapeStore.getAllEntities()");
+    console.log(intersects, "intersects");
+
+    if (intersects.length > 0) {
+      const selected = intersects[0].object;  
+      shapeStore.setCurrentEntity(selected);  
+    }
   };
 
   useEffect(() => {
@@ -79,7 +101,9 @@ const MainCanvas = ({ selectedShape }) => {
     // Call the function to create or update the shape based on the selectedShape prop
     createOrUpdateShape(selectedShape);
 
-    // Animation loop
+    const canvas = canvasRef.current;
+    canvas.addEventListener("click", handleMouseClick);
+
     const animate = () => {
       if (rendererRef.current && sceneRef.current && cameraRef.current) {
         requestAnimationFrame(animate);
@@ -95,7 +119,7 @@ const MainCanvas = ({ selectedShape }) => {
         shapeDrawerRef.current.removeEventListeners();
         shapeDrawerRef.current = null; // Nullify the reference to cleanup resources
       }
-      // Additional cleanup if necessary (disposing resources, etc.)
+      canvas.removeEventListener("click", handleMouseClick);  // Remove event listener on cleanup
     };
   }, [selectedShape]); // Re-run only if selectedShape changes
 
