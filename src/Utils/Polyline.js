@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import shapeStore from "../Store";
+import {shapeStore} from "../Store";
 
 class Polyline {
   constructor(scene, camera,plane) {

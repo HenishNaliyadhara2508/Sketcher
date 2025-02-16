@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import shapeStore from "../Store";
+import {shapeStore} from "../Store";
 
 class Ellipse {
   constructor(scene, camera, plane) {
@@ -62,7 +62,7 @@ class Ellipse {
         shapeStore.setRadiusX(this.radiusX);
         shapeStore.setRadiusY(this.radiusY);
         this.updateEllipse();
-        this.createSphereAtCenter(); // Create the sphere at the center of the ellipse
+        // this.createSphereAtCenter(); // Create the sphere at the center of the ellipse
         this.isDrawing = false;
         this.ellipse = null;
         this.removeEventListeners();
@@ -138,17 +138,17 @@ class Ellipse {
   }
 
   // Create a sphere at the center of the ellipse
-  createSphereAtCenter() {
-    const sphereRadius = 0.05; // Define the sphere radius
-    const geometry = new THREE.SphereGeometry(sphereRadius, 32, 32);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red sphere
-    const sphere = new THREE.Mesh(geometry, material);
+  // createSphereAtCenter() {
+  //   const sphereRadius = 0.05; // Define the sphere radius
+  //   const geometry = new THREE.SphereGeometry(sphereRadius, 32, 32);
+  //   const material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red sphere
+  //   const sphere = new THREE.Mesh(geometry, material);
 
-    // Apply a small offset in the Y-direction to avoid Z-fighting
-    sphere.position.set(this.center.x, this.center.y + 0.1, this.center.z);
+  //   // Apply a small offset in the Y-direction to avoid Z-fighting
+  //   sphere.position.set(this.center.x, this.center.y + 0.1, this.center.z);
 
-    this.scene.add(sphere); // Add the sphere to the scene
-  }
+  //   this.scene.add(sphere); // Add the sphere to the scene
+  // }
 }
 
 export default Ellipse;

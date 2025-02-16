@@ -8,7 +8,7 @@ import { FaRegCircle } from "react-icons/fa";
 import { TbOvalVertical } from "react-icons/tb";
 import { PiPolygonLight } from "react-icons/pi";
 import { observer } from "mobx-react";
-import shapeStore from "../Store";
+import {shapeStore} from "../Store";
 
 import Line from "../Utils/Line";
 import Circle from "../Utils/Circle";
@@ -66,15 +66,6 @@ const SearchBar = observer(() => {
       shape.line.visible = shape.visible;
     }
 
-    // You can also add checks for other specific properties, like spheres or extra components in case the shape is more complex
-    if (shape.sphereStart) {
-      shape.sphereStart.visible = shape.visible;
-    }
-
-    if (shape.sphereEnd) {
-      shape.sphereEnd.visible = shape.visible;
-    }
-
     // If you are using any group, you can toggle its visibility as well
     if (shape.group) {
       shape.group.visible = shape.visible;
@@ -83,7 +74,7 @@ const SearchBar = observer(() => {
 
   // Set the current entity when a shape is clicked
   const handleShapeClick = (shape) => {
-    shapeStore.setCurrentEntity(shape); // Set the selected shape as the current entity
+    shapeStore.setEntity(shape); // Set the selected shape as the current entity
   };
 
   // Handle the toggle for expanding and collapsing the "My file" panel
@@ -119,13 +110,13 @@ const SearchBar = observer(() => {
           <div className="mt-4">
             {shapes.length > 0 ? (
               shapes.map((shape) => {
-                const isSelected = shape === shapeStore.getCurrentEntity(); // Check if the shape is selected
+                const isSelected = shape === shapeStore.Entity(); // Check if the shape is selected
 
                 return (
                   <div
                     key={shape.id}
                     className={`flex justify-between m-2 rounded hover:bg-white p-2 ${
-                      isSelected ? "bg-blue-500" : "hoever:bg-white"
+                      isSelected ? "bg-blue-500" : ""
                     }`}
                     onClick={() => handleShapeClick(shape)} // Set the current entity on click
                   >

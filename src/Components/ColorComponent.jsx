@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const ColorComponent = ({ value, setColor }) => {
+const ColorComponent = ({ value, setColor,opacity,handleOpacity }) => {
   const [hexColor, setHexColor] = useState(value);
 
   useEffect(() => {
@@ -38,14 +38,14 @@ const ColorComponent = ({ value, setColor }) => {
   return (
     <div className="flex mt-2 gap-5">
       <div className="w-1/5">
-        <input type="color" value={hexColor} onChange={handleChange} />
+        <input type="color" value={hexColor} onChange={handleChange}  />
       </div>
       <div className="w-2/3">
         RGB: ({hexToRgb(hexColor).r}, {hexToRgb(hexColor).g},
         {hexToRgb(hexColor).b})
       </div>
       <div className="w-1/5 me-8">
-        <input className="w-4/5 bg-gray-100" type="number" min="0" max="100" />
+        <input className="w-4/5 bg-gray-100" type="number" min="0" max="100" opacity={opacity} onChange={(e) => handleOpacity(e.target.value)}/>
       </div>
     </div>
   );

@@ -1,420 +1,406 @@
-import React, { useState, useEffect, useCallback } from "react";
-import * as THREE from "three";
-import InputNumber from "./InputNumber"; // Ensure this is a valid component
+import React from "react";
 import Button from "./Button";
+import InputNumber from "./InputNumber";
+import ColorComponent from "./ColorComponent";
+import { useState, useEffect } from "react";
+import { observer } from "mobx-react";
+import  {shapeStore}  from "../Store";
 import { RxUpdate } from "react-icons/rx";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { GrFormViewHide } from "react-icons/gr";
-import shapeStore from "../Store"; // Ensure to import shapeStore
-import { observer } from "mobx-react";
-import ColorComponent from "./ColorComponent";
+
+// import * as THREE from "three";
 
 const Properties = observer(() => {
-  const selectedShape = shapeStore?.getCurrentEntity(); // Get the currently selected shape
-  const EllipseRadiusXY = shapeStore?.getEllipseRadius(selectedShape?.uuid)
-  // Extracting points for shapes with Float32Array
-  const points = selectedShape?.geometry?.attributes?.position?.array;
-  const centerCircle = selectedShape?.center;
-  const centerEllipse = selectedShape?.center;
-  const Radius = selectedShape?.geometry?.parameters?.radius;
-  const Rx = EllipseRadiusXY?.[0];
-  const Ry = EllipseRadiusXY?.[1];
-
-  const [tempCoordinates, setTempCoordinates] = useState([]);
-  const [centerCoordinates, setCenterCoordinates] = useState({
-    x: 0,
-    y: 0,
-    z: 0,
-  });
-  const [radius, setRadius] = useState(0);
-  const [radiusX, setRadiusX] = useState(0);
-  const [radiusY, setRadiusY] = useState(0);
-  const [shapeColor, setShapeColor] = useState({ r: 0, g: 0, b: 0 });
-
+  const entity = shapeStore.Entity();
+  console.log(
+    entity?.material.color.r,
+    entity?.material.color.g,
+    entity?.material.color.b,
+    "color"
+  );
   
-  const getCoordinates = (index) => {
-    if (points && points.length >= index * 3 + 3) {
-      return {
+  const [circleCenter, setCircleCenter] = useState({ x: 0, y: 0, z: 0 });
+  const [circleRadius, setCircleRadius] = useState(null);
+  const [ellipseCenter, setEllipseCenter] = useState({ x: 0, y: 0, z: 0 });
+  const [Rx, setRx] = useState(null);
+  const [Ry, setRy] = useState(null);
+  const [lineStart, setLineStart] = useState([]); //{ x: 0, y: 0, z: 0 }
+  const [lineEnd, setLineEnd] = useState([]); //{ x: 0, y: 0, z: 0 }
+  const [color, setColor] = useState({ r: 0, g: 0, b: 0 });
+  const [polylinePoints, setPolylinePoints] = useState([]);
+  const [opacity, setOpacity] = useState(null);
+
+  // setColor([entity.material.color.r,entity.material.color.g,entity.material.color.b])
+  useEffect(() => {
+    if (entity?.name === "Circle") {
+      setCircleCenter(entity.center);
+      setCircleRadius(entity.geometry.parameters.radius);
+      // circleRadius = entity.geometry.parameters.radius;
+      // circleCenter = entity.center;
+    }
+    if (entity?.name === "Ellipse") {
+      const ellipseRadius = shapeStore.getEllipseRadius(entity?.uuid);
+      console.log(ellipseRadius, "ellipse-radius");
+      setEllipseCenter(entity.position);
+      setRx(ellipseRadius[0]);
+      setRy(ellipseRadius[1]);
+      // ellipseCenter = entity.position;
+      // ellipseRadius = shapeStore.getEllipseRadius(entity?.uuid);
+      // Rx = ellipseRadius[0];
+      // Ry = ellipseRadius[1];
+
+      // console.log(shapeStore.getEllipseRadius(entity?.uuid), "radius");
+    }
+    if (entity?.name === "Line") {
+      setLineStart(entity.geometry.attributes.position.array.slice(0, 3));
+      setLineEnd(entity.geometry.attributes.position.array.slice(3, 6));
+      console.log(lineStart, "start", lineEnd, "end");
+    }
+
+    if (entity?.name === "Polyline") {
+      const points = entity.geometry.attributes.position.array;
+      const polylinePoints = Array.from({
+        length: (points.length - 6) / 3,
+      }).map((_, index) => ({
         x: points[index * 3],
         y: points[index * 3 + 1],
         z: points[index * 3 + 2],
-      };
+      }));
+      setPolylinePoints(polylinePoints);
     }
-    return { x: 0, y: 0, z: 0 };
+    if (entity?.material) {
+      const { r, g, b } = entity.material.color;
+      setColor({
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255),
+      });
+      //g: entity?.material.color.g * 255
+    }
+    if (entity?.material) {
+      const opacity = Math.round(entity.material?.opacity * 100);
+      setOpacity(opacity);
+    }
+  }, [entity]);
+  // console.log(color, "color");
+  // console.log(entity, "entity in right side");
+
+  //handler
+  const handleLineStartChange = (axis, value) => {
+    const axisIndex = axis === "x" ? 0 : axis === "y" ? 1 : 2;
+    setLineStart((prevState) => {
+      const newStart = [...prevState]; // Make a copy of the array
+      newStart[axisIndex] = value; // Update the corresponding axis
+      return newStart;
+    });
+
+    // setLineStart((prevState) => ({ ...prevState, [axis]: value }));
   };
 
-  useEffect(() => {
-    if (selectedShape) {
-      console.log("Selected Shape: ", selectedShape);
-      console.log("Current Center: ", centerCircle || centerEllipse);
-      console.log("Current Radius: ", Radius || Rx);
-    }
-    if (selectedShape && points) {
-      const initialCoordinates = [];
-      for (let i = 0; i < points.length / 3; i++) {
-        initialCoordinates.push(getCoordinates(i));
-      }
-      setTempCoordinates(initialCoordinates);
-    }
-    if(selectedShape?.material) {
-      setShapeColor({
-        r: selectedShape.material.color.r * 255,
-        g: selectedShape.material.color.g * 255,
-        b: selectedShape.material.color.b * 255,
-      });
-    }
-    if (selectedShape?.name === "Circle" || selectedShape?.name === "Ellipse") {
-      if (selectedShape?.name === "Circle") {
-        setCenterCoordinates({
-          x: centerCircle?.x || 0,
-          y: centerCircle?.y || 0,
-          z: centerCircle?.z || 0,
-        });
-        setRadius(Radius || 0);
-      } else if (selectedShape?.name === "Ellipse") {
-        setCenterCoordinates({
-          x: centerEllipse?.x || 0,
-          y: centerEllipse?.y || 0,
-          z: centerEllipse?.z || 0,
-        });
-        setRadiusX(Rx || 0);
-        setRadiusY(Ry || 0);
-      }
-    }
-  }, [selectedShape, points, centerCircle, centerEllipse, Radius, Rx, Ry]);
+  const handleLineEndChange = (axis, value) => {
+    const axisIndex = axis === "x" ? 0 : axis === "y" ? 1 : 2;
+    setLineEnd((prevState) => {
+      const newEnd = [...prevState]; // Make a copy of the array
+      newEnd[axisIndex] = value; // Update the corresponding axis
+      return newEnd;
+    });
+    // setLineEnd((prevState) => ({ ...prevState, [axis]: value }));
+  };
 
-  const handleCoordinateChange = useCallback(
-    (index, axis, newValue) => {
-      const floatValue = parseFloat(newValue);
+  const handlePolylinePointChange = (index, axis, value) => {
+    const updatedPoints = [...polylinePoints];
+    updatedPoints[index][axis] = value;
+    setPolylinePoints(updatedPoints);
+  };
 
-      if (isNaN(floatValue) && newValue !== "") return;
+  const handleCircleCenterChange = (axis, value) => {
+    setCircleCenter((prevState) => ({ ...prevState, [axis]: value }));
+  };
 
-      const updatedCoordinates = [...tempCoordinates];
-      updatedCoordinates[index][axis] = isNaN(floatValue) ? 0 : floatValue;
+  const handleEllipseCenterChange = (axis, value) => {
+    setEllipseCenter((prevState) => ({ ...prevState, [axis]: value }));
+  };
 
-      setTempCoordinates(updatedCoordinates);
-    },
-    [tempCoordinates]
-  );
+  const handleCircleRadiusChange = (value) => {
+    setCircleRadius(value);
+  };
 
-  const handleChangeCenter = useCallback((axis, value) => {
-    const floatValue = parseFloat(value);
+  const handleEllipseRadiusXChange = (value) => {
+    setRx(value);
+  };
 
-    if (value === "") {
-      setCenterCoordinates(
-        (prev) => {
-        const updatedCenter = { ...prev };
-        updatedCenter[axis] = 0;
-        return updatedCenter;
-      });
-      shapeStore.setCenter(axis, 0);
-    } else if (!isNaN(floatValue)) {
-      setCenterCoordinates((prev) => {
-        const updatedCenter = { ...prev };
-        updatedCenter[axis] = floatValue;
-        return updatedCenter;
-      });
-      shapeStore.setCenter(axis, floatValue);
-    }
-  }, []);
+  const handleEllipseRadiusYChange = (value) => {
+    setRy(value);
+  };
 
-  const handleChangeCircleRadius = useCallback((value) => {
-    const floatValue = parseFloat(value);
-    if (!isNaN(floatValue)) {
-      setRadius(floatValue);
-      shapeStore.setRadius(floatValue); // Set the radius in the store
-    }
-  }, []);
-  
-  const handleChangeRadius = useCallback((value, isX = false) => {
-    const floatValue = parseFloat(value);
-    if (!isNaN(floatValue)) {
-      if (isX) {
-        setRadiusX(floatValue);
-        shapeStore.setRadiusX(floatValue); // Set the X radius in the store
-      } else {
-        setRadiusY(floatValue);
-        shapeStore.setRadiusY(floatValue); // Set the Y radius in the store
-      }
-    }
-  }, []);
-  
   const rgbToHex = (r, g, b) => {
-  const toHex = (x) => {
-    const hex = x.toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  };
-  
-  return '#' + toHex(r) + toHex(g) + toHex(b);
-};
-
-  const setColor = (rgb) => {
-    setShapeColor(rgb);
-    if (selectedShape?.material) {
-      selectedShape.material.color.setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255); 
-    }
-  };
-  const toggleVisibility = (shape) => {
-    shape.visible = !shape.visible;
-
-    if (shape.mesh) {
-      shape.mesh.visible = shape.visible;
-    }
-
-    // For Polyline, check if it has a 'line' property and toggle its visibility
-    if (shape.line) {
-      shape.line.visible = shape.visible;
-    }
-
-    // You can also add checks for other specific properties, like spheres or extra components in case the shape is more complex
-    if (shape.sphereStart) {
-      shape.sphereStart.visible = shape.visible;
-    }
-
-    if (shape.sphereEnd) {
-      shape.sphereEnd.visible = shape.visible;
-    }
-
-    // If you are using any group, you can toggle its visibility as well
-    if (shape.group) {
-      shape.group.visible = shape.visible;
-    }
+    const toHex = (x) => {
+      const hex = x.toString(16);
+      return hex.length === 1 ? "0" + hex : hex;
+    };
+    return "#" + toHex(r) + toHex(g) + toHex(b);
   };
 
-  const handleUpdate = useCallback(() => {
-    console.log("Update clicked");
-  
-    if (selectedShape && selectedShape.geometry) {
-      const geometry = selectedShape.geometry;
-      const updatedPoints = tempCoordinates.flatMap((point) => [
-        point.x,
-        point.y,
-        point.z,
-      ]);
-  
-      const pointsChanged =
-        updatedPoints.length !== geometry.attributes.position.array.length ||
-        updatedPoints.some(
-          (value, index) => value !== geometry.attributes.position.array[index]
-        );
-  
-      if (pointsChanged) {
-        const newPositionAttribute = new THREE.BufferAttribute(
-          new Float32Array(updatedPoints),
-          3
-        );
-  
-        geometry.setAttribute("position", newPositionAttribute);
-        geometry.attributes.position.needsUpdate = true;
-  
-        // For Circle or Ellipse, also update the center and radius accordingly
-        if (selectedShape.name === "Circle") {
-          const center = centerCircle; // Using the center coordinates for the circle
-          geometry.parameters.radius = radius; // Update the radius
-          geometry.parameters.center = center; // Update the center
-          console.log("Circle updated with new center and radius.");
-        } else if (selectedShape.name === "Ellipse") {
-          const center = centerEllipse; // Using the center coordinates for the ellipse
-          geometry.parameters.radiusX = radiusX; // Update the X radius
-          geometry.parameters.radiusY = radiusY; // Update the Y radius
-          geometry.parameters.center = center; // Update the center
-          console.log("Ellipse updated with new center and radii.");
-        }
-  
-        console.log("Geometry updated.");
-      } else {
-        console.log("No changes detected. Skipping update.");
-      }
-    } else {
-      console.log("Selected shape or geometry not found.");
-    }
-  }, [tempCoordinates, selectedShape, centerCircle, centerEllipse, radius, radiusX, radiusY]);
-  
+  const handleColor = (value) => {
+    setColor(value);
+    // if (entity?.material) {
+    //   entity.material.color.setRGB(value.r / 255, value.g / 255, value.b / 255);
+    // }
+  };
+
+  const handleOpacity = (value) => {
+    setOpacity(Math.max(0, Math.min(100, value)));
+
+    // setOpacity(value)
+  };
+  const handleHide = (id) => {
+    shapeStore.hideEntity(id);
+  };
+
+  const handleRemove = (id) => {
+    shapeStore.removeEntity(id);
+    shapeStore.setEntity(null);
+  };
+
+  const handleUpdate = (entityId) => {
+    const updatedProperties = {
+      color,
+      opacity,
+      lineStart,
+      lineEnd,
+      ellipseCenter,
+      Rx,
+      Ry,
+      circleCenter,
+      circleRadius,
+      polylinePoints,
+    };
+
+    shapeStore.updateEntity(entityId, updatedProperties); // Pass the updated properties to the store
+  };
+
+  // const handleUpdate = (id) => {
+  //   shapeStore.updateEntity(id); // Pass the ID of the selected entity to update its properties
+  // };
+
+  // const points = entity?.geometry.attributes.position.array;
+
+  // const getCoordinates = (index) => {
+  //   if (points && points.length >= index * 3 + 3) {
+  //     return {
+  //       x: points[index * 3],
+  //       y: points[index * 3 + 1],
+  //       z: points[index * 3 + 2],
+  //     };
+  //   }
+  //   return { x: 0, y: 0, z: 0 };
+  // };
 
   return (
-    <div className="rounded max-h-screen overflow-y-scroll">
-      <div className="font-bold">Properties</div>
-
-      {selectedShape ? (
+    //container flex-col absolute right-0 top-0 z-10 m-5 p-5 bg-gray-200 mx-3   min-h-screen rounded-xl w-[25%]
+    <div className="rounded max-h-screen overflow-auto rounded-xl ">
+      <div className="font-bold text-2xl">Properties</div>
+      {entity ? (
         <>
-          <div className="mb-4">{selectedShape.name}</div>
-
+          <div className="mb-4 text-l">{entity.name}</div>{" "}
+          {/* Show shape's name */}
           <hr className="my-4" />
-
-          {selectedShape.name === "Line" && points && (
+          {/* Properties based on selected shape */}
+          {entity.name === "Line" && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
-                <div>Starting Point</div>
+                <div className="text-xl">Starting Point</div>
                 <InputNumber
                   label="x"
-                  value={tempCoordinates[0]?.x || 0}
-                  onChange={(newValue) =>
-                    handleCoordinateChange(0, "x", newValue)
-                  }
+                  value={lineStart[0]} //{lineStart.x}
+                  onChange={(value) => handleLineStartChange("x", value)}
                 />
                 <InputNumber
                   label="y"
-                  value={tempCoordinates[0]?.y || 0}
-                  onChange={(newValue) =>
-                    handleCoordinateChange(0, "y", newValue)
-                  }
+                  value={lineStart[1]} //{lineStart.y}
+                  onChange={(value) => handleLineStartChange("y", value)}
                 />
                 <InputNumber
                   label="z"
-                  value={tempCoordinates[0]?.z || 0}
-                  onChange={(newValue) =>
-                    handleCoordinateChange(0, "z", newValue)
-                  }
+                  value={lineStart[2]} //{lineStart.z}
+                  onChange={(value) => handleLineStartChange("z", value)}
                 />
+                {/* <InputNumber label="x" value={getCoordinates(0).x} />
+                <InputNumber label="y" value={getCoordinates(0).y} />
+                <InputNumber label="z" value={getCoordinates(0).z} /> */}
               </div>
-
               <div className="flex flex-col gap-4">
-                <div>Ending Point</div>
+                <div className="text-xl">Ending Point</div>
                 <InputNumber
                   label="x"
-                  value={tempCoordinates[1]?.x || 0}
-                  onChange={(newValue) =>
-                    handleCoordinateChange(1, "x", newValue)
-                  }
+                  value={lineEnd[0]} //{lineEnd.x}
+                  onChange={(value) => handleLineEndChange("x", value)}
                 />
                 <InputNumber
                   label="y"
-                  value={tempCoordinates[1]?.y || 0}
-                  onChange={(newValue) =>
-                    handleCoordinateChange(1, "y", newValue)
-                  }
+                  value={lineEnd[1]} //{lineEnd.y}
+                  onChange={(value) => handleLineEndChange("y", value)}
                 />
                 <InputNumber
                   label="z"
-                  value={tempCoordinates[1]?.z || 0}
-                  onChange={(newValue) =>
-                    handleCoordinateChange(1, "z", newValue)
-                  }
+                  value={lineEnd[2]} //{lineEnd.z}
+                  onChange={(value) => handleLineEndChange("z", value)}
                 />
+                {/* <InputNumber label="x" value={getCoordinates(1).x} />
+                <InputNumber label="y" value={getCoordinates(1).y} />
+                <InputNumber label="z" value={getCoordinates(1).z} /> */}
               </div>
             </div>
           )}
-
-          {selectedShape.name === "Circle" && (
+          {entity.name === "Circle" && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
-                <div>Center</div>
+                <div className="text-xl">Center</div>
                 <InputNumber
                   label="x"
-                  value={centerCoordinates.x || 0}
-                  onChange={(newValue) => handleChangeCenter("x", newValue)}
-                  allowClear={false}
+                  value={circleCenter.x}
+                  onChange={(value) => handleCircleCenterChange("x", value)}
                 />
                 <InputNumber
                   label="y"
-                  value={centerCoordinates.y || 0}
-                  onChange={(newValue) => handleChangeCenter("y", newValue)}
-                  allowClear={false}
+                  value={circleCenter.y}
+                  onChange={(value) => handleCircleCenterChange("y", value)}
                 />
                 <InputNumber
                   label="z"
-                  value={centerCoordinates.z || 0}
-                  onChange={(newValue) => handleChangeCenter("z", newValue)}
-                  allowClear={false}
+                  value={circleCenter.z}
+                  onChange={(value) => handleCircleCenterChange("z", value)}
                 />
+                {/* <InputNumber label="x" value={circleCenter.x} />
+                <InputNumber label="y" value={circleCenter.y} />
+                <InputNumber label="z" value={circleCenter.z} /> */}
               </div>
+
               <div>
-                <div>Radius</div>
+                <div className="text-xl">Radius</div>
                 <InputNumber
                   label="R"
-                  value={radius || 0}
-                  onChange={handleChangeCircleRadius}
-                  allowClear={false}
+                  value={circleRadius}
+                  onChange={handleCircleRadiusChange}
                 />
+                {/* <InputNumber label="R" value={circleRadius} /> */}
               </div>
             </div>
           )}
-
-          {selectedShape?.name === "Ellipse" && (
+          {entity.name === "Ellipse" && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
-                <div>Center</div>
+                <div className="text-xl">Center</div>
                 <InputNumber
                   label="x"
-                  value={centerCoordinates.x || 0}
-                  onChange={(newValue) => handleChangeCenter("x", newValue)}
-                  allowClear={false}
+                  value={ellipseCenter.x}
+                  onChange={(value) => handleEllipseCenterChange("x", value)}
                 />
                 <InputNumber
                   label="y"
-                  value={centerCoordinates.y || 0}
-                  onChange={(newValue) => handleChangeCenter("y", newValue)}
-                  allowClear={false}
+                  value={ellipseCenter.y}
+                  onChange={(value) => handleEllipseCenterChange("y", value)}
                 />
                 <InputNumber
                   label="z"
-                  value={centerCoordinates.z || 0}
-                  onChange={(newValue) => handleChangeCenter("z", newValue)}
-                  allowClear={false}
+                  value={ellipseCenter.z}
+                  onChange={(value) => handleEllipseCenterChange("z", value)}
                 />
+                {/* <InputNumber label="x" value={ellipseCenter.x} />
+                <InputNumber label="y" value={ellipseCenter.y} />
+                <InputNumber label="z" value={ellipseCenter.z} /> */}
               </div>
               <div className="flex flex-col gap-4 mb-3 w-full">
-                <div>Radius</div>
+                <div className="text-xl">Radius</div>
                 <InputNumber
                   label="Rx"
-                  value={radiusX || 0}
-                  onChange={(newValue) => handleChangeRadius(newValue, true)}
-                  allowClear={false}
+                  value={Rx}
+                  onChange={handleEllipseRadiusXChange}
                 />
                 <InputNumber
                   label="Ry"
-                  value={radiusY || 0}
-                  onChange={(newValue) => handleChangeRadius(newValue, false)}
-                  allowClear={false}
+                  value={Ry}
+                  onChange={handleEllipseRadiusYChange}
                 />
+                {/* <InputNumber label="Rx" value={Rx} />
+                <InputNumber label="Ry" value={Ry} /> */}
               </div>
             </div>
           )}
-
-          {selectedShape.name === "Polyline" && points && (
+          {entity.name === "Polyline" && (
             <div>
-              {tempCoordinates
-                .slice(0, tempCoordinates.length - 2)
-                .map((point, index) => (
+              {polylinePoints.map((point, index) => (
+                <div key={index} className="flex flex-col gap-4 mb-3">
+                  <div className="text-xl">Point {index + 1}</div>
+                  <InputNumber
+                    label="x"
+                    value={point.x}
+                    onChange={(value) =>
+                      handlePolylinePointChange(index, "x", value)
+                    }
+                  />
+                  <InputNumber
+                    label="y"
+                    value={point.y}
+                    onChange={(value) =>
+                      handlePolylinePointChange(index, "y", value)
+                    }
+                  />
+                  <InputNumber
+                    label="z"
+                    value={point.z}
+                    onChange={(value) =>
+                      handlePolylinePointChange(index, "z", value)
+                    }
+                  />
+                </div>
+              ))}
+              {/* {Array.from({ length: (points.length - 6) / 3 }).map(
+                (_, index) => (
                   <div key={index} className="flex flex-col gap-4 mb-3">
-                    <div>Point {index + 1}</div>
-
-                    <InputNumber
-                      label="x"
-                      value={point.x}
-                      onChange={(newValue) =>
-                        handleCoordinateChange(index, "x", newValue)
-                      }
-                    />
-                    <InputNumber
-                      label="y"
-                      value={point.y}
-                      onChange={(newValue) =>
-                        handleCoordinateChange(index, "y", newValue)
-                      }
-                    />
-                    <InputNumber
-                      label="z"
-                      value={point.z}
-                      onChange={(newValue) =>
-                        handleCoordinateChange(index, "z", newValue)
-                      }
-                    />
+                    <div className="text-xl">Point {index + 1}</div>
+                    <InputNumber label="x" value={getCoordinates(index).x} />
+                    <InputNumber label="y" value={getCoordinates(index).y} />
+                    <InputNumber label="z" value={getCoordinates(index).z} />
                   </div>
-                ))}
+                )
+              )} */}
             </div>
           )}
-
-          <Button icon={<RxUpdate />} name="Update" onClick={handleUpdate} />
-          
-          <ColorComponent value={rgbToHex(shapeColor.r, shapeColor.g, shapeColor.b)} setColor={setColor} />
-
-          
-          <Button icon={<GrFormViewHide />} name="Hide" onClick={() => toggleVisibility(selectedShape)}/>
-          <Button icon={<RiDeleteBinLine />} name="Delete" onClick={() => shapeStore.removeEntity(selectedShape)} />
+          <Button
+            icon={<RxUpdate />}
+            name="Update"
+            entityID={entity.uuid}
+            handleClick={handleUpdate}
+          />
+          <div className="text-xl">Color</div>
+          <ColorComponent
+            value={rgbToHex(color.r, color.g, color.b)}
+            setColor={(value) => {
+              handleColor(value);
+            }}
+            opacity={opacity}
+            handleOpacity={handleOpacity}
+          />
+          {/* <div>
+            <input type="color" />
+          </div> */}
+          <Button
+            icon={<GrFormViewHide />}
+            name="Hide"
+            entityID={entity.uuid}
+            handleClick={handleHide}
+          />
+          <Button
+            icon={<RiDeleteBinLine />}
+            name="Delete"
+            entityID={entity.uuid}
+            handleClick={handleRemove}
+          />
         </>
       ) : (
-        <div>Select a shape to see its properties.</div>
+        <div className="text-xl flex bg-transparent items-center">Select a shape to see its properties.</div>
       )}
     </div>
   );

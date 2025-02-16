@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import shapeStore from "../Store";
+import { shapeStore } from "../Store";
+// import shapeToolStore from "../stores/shapeToolStore";
+
+// import sceneStore from "../stores/sceneStore";
 import Line from "../Utils/Line";
-import Circle from "../Utils/Circle";  // Add other shapes as needed
+import Circle from "../Utils/Circle"; // Add other shapes as needed
 import Ellipse from "../Utils/Ellipse";
 import Polyline from "../Utils/Polyline";
+
+const TOLERANCE = 1;
 
 const MainCanvas = ({ selectedShape }) => {
   const canvasRef = useRef(null);
@@ -15,7 +20,7 @@ const MainCanvas = ({ selectedShape }) => {
   const shapeDrawerRef = useRef(null); // Persist shape drawer across re-renders
 
   const [mouse] = useState(new THREE.Vector2()); // To store mouse coordinates
-  const raycaster = useRef(new THREE.Raycaster()); // Raycaster instance
+  const raycaster = new THREE.Raycaster(); // Raycaster instance
 
   // Function to initialize or update the shape
   const createOrUpdateShape = (shapeType) => {
@@ -28,40 +33,65 @@ const MainCanvas = ({ selectedShape }) => {
 
     // Create a new shape depending on the selected type
     if (shapeType === "Line") {
-      shapeDrawer = new Line(sceneRef.current, cameraRef.current, planeRef.current);
+      shapeDrawer = new Line(
+        sceneRef.current,
+        cameraRef.current,
+        planeRef.current
+      );
     } else if (shapeType === "Circle") {
-      shapeDrawer = new Circle(sceneRef.current, cameraRef.current, planeRef.current);
+      shapeDrawer = new Circle(
+        sceneRef.current,
+        cameraRef.current,
+        planeRef.current
+      );
     } else if (shapeType === "Ellipse") {
-      shapeDrawer = new Ellipse(sceneRef.current, cameraRef.current, planeRef.current);
+      shapeDrawer = new Ellipse(
+        sceneRef.current,
+        cameraRef.current,
+        planeRef.current
+      );
     } else if (shapeType === "Polyline") {
-      shapeDrawer = new Polyline(sceneRef.current, cameraRef.current, planeRef.current);
+      shapeDrawer = new Polyline(
+        sceneRef.current,
+        cameraRef.current,
+        planeRef.current
+      );
     }
 
-    shapeDrawer.addEventListeners(); 
-    shapeDrawerRef.current = shapeDrawer; 
+    // shapeDrawer.addEventListeners();
+    shapeDrawerRef.current = shapeDrawer;
   };
 
-  const handleMouseClick = (event) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  const selectShape = (event) => {
+    // Update mouse coordinates relative to the window
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-    // Update the raycaster's position
-    raycaster.current.update(); 
+    raycaster.params.Line.threshold = TOLERANCE; // Adds tolerance for line/polyline selection
+    raycaster.setFromCamera(mouse, cameraRef.current);
 
-    // Cast the ray to see which object is intersected
-    const intersects = raycaster.current.intersectObjects(shapeStore.getAllEntities());
-    console.log(shapeStore.getAllEntities(), "shapeStore.getAllEntities()");
-    console.log(intersects, "intersects");
+    // Directly pass the shapes array from the store
+    const allMeshes = shapeStore.shapes; // Assuming shapeStore.shapes is an array of meshes
+
+    console.log(allMeshes, "allMeshes after mapping and flattening");
+
+    // Perform raycasting with the updated array of meshes
+    const intersects = raycaster.intersectObjects(allMeshes, true); // Ensure we pass meshes here
+    console.log(intersects, "intersects after raycasting");
 
     if (intersects.length > 0) {
-      const selected = intersects[0].object;  
-      shapeStore.setCurrentEntity(selected);  
+      const clickedMesh = intersects[0].object;
+      console.log(clickedMesh, "clickedMesh");
+
+      // Set the clicked mesh in the shape store
+      shapeStore.setEntity(clickedMesh);
+      console.log(shapeStore.Entity, "shapeStore.entity");
     }
-  };
+};
+
+  
 
   useEffect(() => {
-    // Initialize scene and camera
     if (!sceneRef.current) {
       const scene = new THREE.Scene();
       sceneRef.current = scene;
@@ -76,7 +106,7 @@ const MainCanvas = ({ selectedShape }) => {
       camera.position.set(0, 5, 0);
       camera.lookAt(new THREE.Vector3(0, 0, 0));
       cameraRef.current = camera;
-      shapeStore.setCamera(camera);  // Store the camera reference
+      shapeStore.setCamera(camera); // Store the camera reference
 
       const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -102,7 +132,7 @@ const MainCanvas = ({ selectedShape }) => {
     createOrUpdateShape(selectedShape);
 
     const canvas = canvasRef.current;
-    canvas.addEventListener("click", handleMouseClick);
+    canvas.addEventListener("click", selectShape); // Use the selectShape for mouse click
 
     const animate = () => {
       if (rendererRef.current && sceneRef.current && cameraRef.current) {
@@ -113,15 +143,14 @@ const MainCanvas = ({ selectedShape }) => {
 
     animate();
 
-    // Cleanup on component unmount or when selectedShape changes
     return () => {
       if (shapeDrawerRef.current) {
         shapeDrawerRef.current.removeEventListeners();
-        shapeDrawerRef.current = null; // Nullify the reference to cleanup resources
+        shapeDrawerRef.current = null; 
       }
-      canvas.removeEventListener("click", handleMouseClick);  // Remove event listener on cleanup
+      canvas.removeEventListener("click", selectShape); 
     };
-  }, [selectedShape]); // Re-run only if selectedShape changes
+  }, [selectedShape]); 
 
   return <canvas ref={canvasRef} className="webgl" />;
 };
