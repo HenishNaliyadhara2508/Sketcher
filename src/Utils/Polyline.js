@@ -72,12 +72,12 @@ class Polyline {
   // Handle mouse down event (start new line segment or add to polyline)
   handleMouseDown(event) {
     this.updateMousePosition(event);
-
+  
     // Get the intersection of the mouse with the plane (start or end point of the line)
     const intersects = this.getIntersection();
     if (intersects.length > 0) {
       const currentPoint = intersects[0].point;
-
+  
       if (!this.isDrawing) {
         // Start drawing the polyline with the first point
         this.startNewPolyline(currentPoint);
@@ -86,23 +86,28 @@ class Polyline {
         // Add a new line segment from the last point to the current point
         this.addLineSegment(currentPoint);
       }
-
+  
       this.previousPoint = currentPoint; // Update the previous point
     }
   }
-
+  
   handleMouseMove(event) {
     if (!this.isDrawing || !this.previousPoint) return; // Only update if a line is being drawn
-
+  
     this.updateMousePosition(event);
-
+  
     // Get the intersection of the mouse with the plane (update line end point)
     const intersects = this.getIntersection();
     if (intersects.length > 0) {
       const currentPoint = intersects[0].point;
-      this.updateLastLineSegment(currentPoint); // Update the current line segment
+      if (this.previousPoint) {
+        // Update the last line segment being drawn dynamically
+        this.updateLastLineSegment(currentPoint);
+        this.previousPoint = currentPoint; // Update the previous point
+      }
     }
   }
+  
 
   // Handle double-click event to finalize the polyline
   handleDoubleClick() {
@@ -115,7 +120,7 @@ class Polyline {
   // Start a new polyline with the first point
   startNewPolyline(startPoint) {
     this.points = [startPoint]; // Start with the first point
-    this.createPolyline(); // Create the polyline object
+    this.createPolyline(); 
   }
 
   // Create the polyline object
@@ -128,7 +133,6 @@ class Polyline {
     this.scene.add(this.polyline); // Add the polyline to the scene
   }
 
-  // Add a new line segment to the polyline
   addLineSegment(currentPoint) {
     this.points.push(currentPoint); // Add the new point to the points array
     this.updatePolyline(); // Update the polyline geometry with the new point
@@ -137,19 +141,18 @@ class Polyline {
   // Update the polyline's geometry with the current points
   updatePolyline() {
     const geometry = new THREE.BufferGeometry().setFromPoints(this.points);
-    this.polyline.geometry.dispose(); // Dispose of old geometry to free memory
+    this.polyline.geometry.dispose();
     this.polyline.geometry = geometry; // Update the geometry of the polyline
   }
 
   // Update the last line segment being drawn dynamically as the mouse moves
   updateLastLineSegment(currentPoint) {
-    if (this.points.length > 0) {
+    if (this.points.length > 1) {
       // Update the last segment
       this.points[this.points.length - 1] = currentPoint;
       this.updatePolyline();
     }
   }
-
   // Get the intersection between the mouse and the plane
   getIntersection() {
     this.raycaster.setFromCamera(this.mouse, this.camera); // Set ray origin from camera

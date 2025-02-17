@@ -66,6 +66,7 @@ const Navbar = ({ onUpload }) => {
       };
       reader.readAsText(file);
     }
+    event.target.value = null;
   };
 
   // Helper function to check if a shape is the selected one
