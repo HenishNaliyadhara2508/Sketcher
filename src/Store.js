@@ -7,7 +7,7 @@ class ShapeStore {
   entityId = null;
   scene = null;
   ellipsesRadiusXY = [];
-
+  selectedShape = null;
   constructor() {
     makeAutoObservable(this);
   }
@@ -257,6 +257,9 @@ class ShapeStore {
     return this.plane;
   }
 
+  setSelectedShape(shape){
+    this.selectedShape = shape
+  }
   // Export all shapes as JSON
   exportShapesToJSON() {
     if (!Array.isArray(this.shapes) || this.shapes.length === 0) {

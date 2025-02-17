@@ -65,40 +65,39 @@ class Line {
         this.isDrawing = true; // Set drawing state to true
 
         // Remove the previous line if there is one
-        if (this.line) {
-          this.scene.remove(this.line);
-        }
+        
 
         // Initialize the line geometry and material
         const geometry = new THREE.BufferGeometry();
-        const material = new THREE.LineBasicMaterial({ color: 0xff0000 ,side: THREE.DoubleSide, linewidth: 5 });
+        const material = new THREE.LineBasicMaterial({ color: 0xff0000 ,side: THREE.DoubleSide });
         this.line = new THREE.Line(geometry, material);
         this.line.position.y = 0.2;
         shapeStore.addShape(this.line);
+        
         this.line.name = "Line";
         this.scene.add(this.line); // Add the new line to the scene
 
         // Create a sphere at the start point to indicate the start of the line
-        const sphereGeometry = new THREE.SphereGeometry(0.05, 32, 32);
-        const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-        this.sphereStart = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        this.sphereStart.position.copy(this.startPoint);
-        this.sphereStart.position.y = 0.2;
-        this.scene.add(this.sphereStart); // Add to the scene
+        // const sphereGeometry = new THREE.SphereGeometry(0.05, 32, 32);
+        // const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+        // this.sphereStart = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        // this.sphereStart.position.copy(this.startPoint);
+        // this.sphereStart.position.y = 0.2;
+        // this.scene.add(this.sphereStart); // Add to the scene
 
         // Create a sphere that will follow the cursor (this will become the end point)
-        this.sphereEnd = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        this.sphereEnd.position.copy(this.startPoint);
-        this.sphereEnd.position.y = 0.2; // Initially place it at the start point
-        this.scene.add(this.sphereEnd); // Add to the scene
+        // this.sphereEnd = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        // this.sphereEnd.position.copy(this.startPoint);
+        // this.sphereEnd.position.y = 0.2; // Initially place it at the start point
+        // this.scene.add(this.sphereEnd); // Add to the scene
       } else {
         // Second click: Stop drawing the line
         this.isDrawing = false;
 
         this.endPoint = intersects[0].point;
-        this.sphereEnd.position.copy(this.endPoint); // Move the following sphere to the final point
-        this.sphereEnd.position.y = 0.2; // Place it at the final point
-
+        // this.sphereEnd.position.copy(this.endPoint); // Move the following sphere to the final point
+        // this.sphereEnd.position.y = 0.2; // Place it at the final point
+        shapeStore.setSelectedShape(null);
         const points = [this.startPoint, this.endPoint];
         this.line.geometry.setFromPoints(points);
         this.line.geometry.attributes.position.needsUpdate = true;
@@ -107,7 +106,7 @@ class Line {
 
         // console.log(this.points); // Log points
 
-        this.removeEventListeners();
+        // this.removeEventListeners();
       }
     }
   }
@@ -128,10 +127,10 @@ class Line {
         this.line.geometry.attributes.position.needsUpdate = true; // Notify THREE.js that geometry has changed
 
         // Move the sphereEnd to follow the cursor
-        if (this.sphereEnd) {
-          this.sphereEnd.position.copy(intersects[0].point);
-          this.sphereEnd.position.y = 0.2;
-        }
+        // if (this.sphereEnd) {
+        //   this.sphereEnd.position.copy(intersects[0].point);
+        //   this.sphereEnd.position.y = 0.2;
+        // }
       }
     }
   }

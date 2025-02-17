@@ -61,11 +61,12 @@ class Ellipse {
         // Update the shapeStore only after ellipse is drawn
         shapeStore.setRadiusX(this.radiusX);
         shapeStore.setRadiusY(this.radiusY);
+        shapeStore.setSelectedShape(null);
         this.updateEllipse();
         // this.createSphereAtCenter(); // Create the sphere at the center of the ellipse
         this.isDrawing = false;
         this.ellipse = null;
-        this.removeEventListeners();
+        // this.removeEventListeners();
       }
     }
   }

@@ -66,11 +66,12 @@ export class Circle {
         // On second click, finalize the circle (finish drawing)
         this.radius = this.center.distanceTo(intersects[0].point);
         shapeStore.setRadius(this.radius);
+        shapeStore.setSelectedShape(null);
         this.updateCircle(); // Update the circle to finalize it
         // this.createSphereAtCenter(); // Create a sphere at the center of the circle
         this.isDrawing = false;
         this.circle = null; // Reset drawing state
-        this.removeEventListeners();
+        // this.removeEventListeners();
       }
     }
   }
@@ -126,19 +127,6 @@ export class Circle {
     }
   }
   
-
-  // Create a sphere at the center of the circle
-  // createSphereAtCenter() {
-  //   const sphereRadius = 0.05; // Define the sphere radius
-  //   const geometry = new THREE.SphereGeometry(sphereRadius, 32, 32);
-  //   const material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red sphere
-  //   this.sphere = new THREE.Mesh(geometry, material);
-    
-  //   // Apply a small offset in the Y-direction to avoid Z-fighting
-  //   this.sphere.position.set(this.center.x, this.center.y + 0.1, this.center.z);
-    
-  //   this.scene.add(this.sphere); // Add the sphere to the scene
-  // }
 }
 
 export default Circle;

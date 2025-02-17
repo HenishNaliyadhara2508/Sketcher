@@ -107,8 +107,9 @@ class Polyline {
   // Handle double-click event to finalize the polyline
   handleDoubleClick() {
     this.isDrawing = false; // Stop drawing new line segments
-    shapeStore.addShape(this.polyline); // Add the final polyline to the scene
-    this.removeEventListeners(); // Remove event listeners
+    shapeStore.addShape(this.polyline); 
+    shapeStore.setSelectedShape(null)// Add the final polyline to the scene
+    // this.removeEventListeners(); // Remove event listeners
   }
 
   // Start a new polyline with the first point

@@ -7,17 +7,17 @@ import { FaRegSave } from "react-icons/fa";
 import { FiUpload } from "react-icons/fi";
 import { shapeStore } from "../Store";
 
-const Navbar = ({ onShapeSelect, onUpload }) => {
+const Navbar = ({ onUpload }) => {
   // Handle click event for navbar buttons and stop event propagation
-  const handleNavbarClick = (e, shape, icon) => {
+  const handleNavbarClick = (e, shape) => {
     e.stopPropagation(); // Stop click event propagation
-    onShapeSelect(shape, icon); // Call the passed onShapeSelect function
+    shapeStore.setSelectedShape(shape); // Set selected shape in the store
   };
 
   // Handle save button click event
   const handleSaveClick = (e) => {
     e.stopPropagation();
-    shapeStore.exportShapesToJSON();; // Call the passed onSave function to export shapes as JSON
+    shapeStore.exportShapesToJSON(); // Export shapes as JSON using the shapeStore
   };
 
   // Handle file upload button click event
@@ -55,7 +55,7 @@ const Navbar = ({ onShapeSelect, onUpload }) => {
           }
   
           // Call the onUpload function with the cleaned data
-          if (typeof onUpload === 'function') {
+          if (typeof onUpload === "function") {
             onUpload(uniqueShapes);
           } else {
             console.error("onUpload is not a function!");
@@ -67,35 +67,45 @@ const Navbar = ({ onShapeSelect, onUpload }) => {
       reader.readAsText(file);
     }
   };
-  
+
+  // Helper function to check if a shape is the selected one
+  const isSelected = (shape) => shapeStore.Entity === shape;
 
   return (
     <div className="flex justify-start gap-2 h-18">
       <div className="flex gap-2 p-2 rounded bg-gray-200">
         <div
-          className="btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center"
-          onClick={(e) => handleNavbarClick(e, "Line", <TbLine />)}
+          className={`btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
+            "Line"
+          ) ? "bg-blue-500 text-white" : ""}`}
+          onClick={(e) => handleNavbarClick(e, "Line")}
         >
           <TbLine />
           Line
         </div>
         <div
-          className="btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center"
-          onClick={(e) => handleNavbarClick(e, "Circle", <FaRegCircle />)}
+          className={`btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
+            "Circle"
+          ) ? "bg-blue-500 text-white" : ""}`}
+          onClick={(e) => handleNavbarClick(e, "Circle")}
         >
           <FaRegCircle />
           Circle
         </div>
         <div
-          className="btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center"
-          onClick={(e) => handleNavbarClick(e, "Ellipse", <TbOvalVertical />)}
+          className={`btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
+            "Ellipse"
+          ) ? "bg-blue-500 text-white" : ""}`}
+          onClick={(e) => handleNavbarClick(e, "Ellipse")}
         >
           <TbOvalVertical />
           Ellipse
         </div>
         <div
-          className="btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center"
-          onClick={(e) => handleNavbarClick(e, "Polyline", <PiPolygonLight />)}
+          className={`btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
+            "Polyline"
+          ) ? "bg-blue-500 text-white" : ""}`}
+          onClick={(e) => handleNavbarClick(e, "Polyline")}
         >
           <PiPolygonLight />
           Polyline
