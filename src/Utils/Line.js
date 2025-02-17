@@ -71,9 +71,9 @@ class Line {
 
         // Initialize the line geometry and material
         const geometry = new THREE.BufferGeometry();
-        const material = new THREE.LineBasicMaterial({ color: 0xff0000 ,side: THREE.DoubleSide, });
+        const material = new THREE.LineBasicMaterial({ color: 0xff0000 ,side: THREE.DoubleSide, linewidth: 5 });
         this.line = new THREE.Line(geometry, material);
-        this.line.position.y = 0.1;
+        this.line.position.y = 0.2;
         shapeStore.addShape(this.line);
         this.line.name = "Line";
         this.scene.add(this.line); // Add the new line to the scene
@@ -83,13 +83,13 @@ class Line {
         const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
         this.sphereStart = new THREE.Mesh(sphereGeometry, sphereMaterial);
         this.sphereStart.position.copy(this.startPoint);
-        this.sphereStart.position.y = 0.1;
+        this.sphereStart.position.y = 0.2;
         this.scene.add(this.sphereStart); // Add to the scene
 
         // Create a sphere that will follow the cursor (this will become the end point)
         this.sphereEnd = new THREE.Mesh(sphereGeometry, sphereMaterial);
         this.sphereEnd.position.copy(this.startPoint);
-        this.sphereEnd.position.y = 0.1; // Initially place it at the start point
+        this.sphereEnd.position.y = 0.2; // Initially place it at the start point
         this.scene.add(this.sphereEnd); // Add to the scene
       } else {
         // Second click: Stop drawing the line
@@ -97,7 +97,7 @@ class Line {
 
         this.endPoint = intersects[0].point;
         this.sphereEnd.position.copy(this.endPoint); // Move the following sphere to the final point
-        this.sphereEnd.position.y = 0.1; // Place it at the final point
+        this.sphereEnd.position.y = 0.2; // Place it at the final point
 
         const points = [this.startPoint, this.endPoint];
         this.line.geometry.setFromPoints(points);
@@ -130,7 +130,7 @@ class Line {
         // Move the sphereEnd to follow the cursor
         if (this.sphereEnd) {
           this.sphereEnd.position.copy(intersects[0].point);
-          this.sphereEnd.position.y = 0.1;
+          this.sphereEnd.position.y = 0.2;
         }
       }
     }
@@ -162,22 +162,7 @@ class Line {
       this.line.geometry.attributes.position.needsUpdate = true; // Notify THREE.js that geometry has changed
     }
   }
-
-  // Method to extract the points from the geometry's position attribute
-  // extractPointsFromGeometry(geometry) {
-  //   const positionAttribute = geometry.attributes.position;
-  //   const points = [];
-
-  //   for (let i = 0; i < positionAttribute.count; i++) {
-  //     points.push({
-  //       x: positionAttribute.getX(i),
-  //       y: positionAttribute.getY(i),
-  //       z: positionAttribute.getZ(i),
-  //     });
-  //   }
-
-  //   return points;
-  // }
+  
 }
 
 export default Line;

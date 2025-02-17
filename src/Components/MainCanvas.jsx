@@ -85,11 +85,9 @@ const MainCanvas = ({ selectedShape }) => {
 
       // Set the clicked mesh in the shape store
       shapeStore.setEntity(clickedMesh);
-      console.log(shapeStore.Entity, "shapeStore.entity");
+      console.log(shapeStore.Entity(), "shapeStore.entity");
     }
 };
-
-  
 
   useEffect(() => {
     if (!sceneRef.current) {

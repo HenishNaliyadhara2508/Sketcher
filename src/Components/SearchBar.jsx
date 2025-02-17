@@ -83,7 +83,7 @@ const SearchBar = observer(() => {
   }
 
   return (
-    <div className="flex flex-col rounded">
+    <div className="flex flex-col rounded min-h-[94vh]">
       <div className="flex justify-between p-2 rounded">
         <div>List of Created Objects</div>
         <div>
@@ -143,7 +143,8 @@ const SearchBar = observer(() => {
                       <RiDeleteBinLine
                         onClick={(e) => {
                           e.stopPropagation(); // Prevent triggering handleShapeClick
-                          shapeStore.removeEntity(shape);
+                          shapeStore.removeEntity(shape.uuid);
+                          shapeStore.setEntity(null);
                         }}
                       />
                     </div>

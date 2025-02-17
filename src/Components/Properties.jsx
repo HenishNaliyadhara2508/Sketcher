@@ -13,12 +13,7 @@ import { GrFormViewHide } from "react-icons/gr";
 
 const Properties = observer(() => {
   const entity = shapeStore.Entity();
-  console.log(
-    entity?.material.color.r,
-    entity?.material.color.g,
-    entity?.material.color.b,
-    "color"
-  );
+  
   
   const [circleCenter, setCircleCenter] = useState({ x: 0, y: 0, z: 0 });
   const [circleRadius, setCircleRadius] = useState(null);
@@ -34,57 +29,58 @@ const Properties = observer(() => {
   // setColor([entity.material.color.r,entity.material.color.g,entity.material.color.b])
   useEffect(() => {
     if (entity?.name === "Circle") {
-      setCircleCenter(entity.center);
-      setCircleRadius(entity.geometry.parameters.radius);
-      // circleRadius = entity.geometry.parameters.radius;
-      // circleCenter = entity.center;
+      if (entity.center && entity.geometry?.parameters?.radius) {
+        setCircleCenter(entity.center);
+        setCircleRadius(entity.geometry.parameters.radius);
+      } else {
+        // Log or set defaults in case 'center' or 'radius' are not available
+        console.warn("Circle entity missing center or radius");
+        setCircleCenter({ x: 0, y: 0, z: 0 }); // Default value
+        setCircleRadius(0); // Default radius
+      }
     }
+  
     if (entity?.name === "Ellipse") {
       const ellipseRadius = shapeStore.getEllipseRadius(entity?.uuid);
       console.log(ellipseRadius, "ellipse-radius");
-      setEllipseCenter(entity.position);
-      setRx(ellipseRadius[0]);
-      setRy(ellipseRadius[1]);
-      // ellipseCenter = entity.position;
-      // ellipseRadius = shapeStore.getEllipseRadius(entity?.uuid);
-      // Rx = ellipseRadius[0];
-      // Ry = ellipseRadius[1];
-
-      // console.log(shapeStore.getEllipseRadius(entity?.uuid), "radius");
+      setEllipseCenter(entity.position || { x: 0, y: 0, z: 0 });
+      setRx(ellipseRadius[0] || 0); // Default if undefined
+      setRy(ellipseRadius[1] || 0); // Default if undefined
     }
+  
     if (entity?.name === "Line") {
-      setLineStart(entity.geometry.attributes.position.array.slice(0, 3));
-      setLineEnd(entity.geometry.attributes.position.array.slice(3, 6));
+      setLineStart(entity.geometry?.attributes?.position?.array?.slice(0, 3) || [0, 0, 0]);
+      setLineEnd(entity.geometry?.attributes?.position?.array?.slice(3, 6) || [0, 0, 0]);
       console.log(lineStart, "start", lineEnd, "end");
     }
-
+  
     if (entity?.name === "Polyline") {
-      const points = entity.geometry.attributes.position.array;
+      const points = entity.geometry?.attributes?.position?.array || [];
       const polylinePoints = Array.from({
         length: (points.length - 6) / 3,
       }).map((_, index) => ({
-        x: points[index * 3],
-        y: points[index * 3 + 1],
-        z: points[index * 3 + 2],
+        x: points[index * 3] || 0,
+        y: points[index * 3 + 1] || 0,
+        z: points[index * 3 + 2] || 0,
       }));
       setPolylinePoints(polylinePoints);
     }
+  
     if (entity?.material) {
-      const { r, g, b } = entity.material.color;
+      const { r, g, b } = entity.material.color || { r: 0, g: 0, b: 0 };
       setColor({
         r: Math.round(r * 255),
         g: Math.round(g * 255),
         b: Math.round(b * 255),
       });
-      //g: entity?.material.color.g * 255
     }
+
     if (entity?.material) {
-      const opacity = Math.round(entity.material?.opacity * 100);
+      const opacity = Math.round(entity.material?.opacity * 100) || 100; // Ensure opacity is valid
       setOpacity(opacity);
     }
   }, [entity]);
-  // console.log(color, "color");
-  // console.log(entity, "entity in right side");
+  
 
   //handler
   const handleLineStartChange = (axis, value) => {
@@ -144,9 +140,6 @@ const Properties = observer(() => {
 
   const handleColor = (value) => {
     setColor(value);
-    // if (entity?.material) {
-    //   entity.material.color.setRGB(value.r / 255, value.g / 255, value.b / 255);
-    // }
   };
 
   const handleOpacity = (value) => {
@@ -180,37 +173,22 @@ const Properties = observer(() => {
     shapeStore.updateEntity(entityId, updatedProperties); // Pass the updated properties to the store
   };
 
-  // const handleUpdate = (id) => {
-  //   shapeStore.updateEntity(id); // Pass the ID of the selected entity to update its properties
-  // };
-
-  // const points = entity?.geometry.attributes.position.array;
-
-  // const getCoordinates = (index) => {
-  //   if (points && points.length >= index * 3 + 3) {
-  //     return {
-  //       x: points[index * 3],
-  //       y: points[index * 3 + 1],
-  //       z: points[index * 3 + 2],
-  //     };
-  //   }
-  //   return { x: 0, y: 0, z: 0 };
-  // };
+  
 
   return (
     //container flex-col absolute right-0 top-0 z-10 m-5 p-5 bg-gray-200 mx-3   min-h-screen rounded-xl w-[25%]
-    <div className="rounded max-h-screen overflow-auto rounded-xl ">
-      <div className="font-bold text-2xl">Properties</div>
+    <div className="rounded max-h-[95vh] overflow-auto rounded-xl ">
+      <div className="font-bold ">Properties</div>
       {entity ? (
         <>
-          <div className="mb-4 text-l">{entity.name}</div>{" "}
+          <div className="mb-4 ">{entity.name}</div>{" "}
           {/* Show shape's name */}
           <hr className="my-4" />
           {/* Properties based on selected shape */}
           {entity.name === "Line" && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
-                <div className="text-xl">Starting Point</div>
+                <div className="text-l">Starting Point</div>
                 <InputNumber
                   label="x"
                   value={lineStart[0]} //{lineStart.x}
@@ -231,7 +209,7 @@ const Properties = observer(() => {
                 <InputNumber label="z" value={getCoordinates(0).z} /> */}
               </div>
               <div className="flex flex-col gap-4">
-                <div className="text-xl">Ending Point</div>
+                <div className="text-l">Ending Point</div>
                 <InputNumber
                   label="x"
                   value={lineEnd[0]} //{lineEnd.x}
@@ -256,7 +234,7 @@ const Properties = observer(() => {
           {entity.name === "Circle" && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
-                <div className="text-xl">Center</div>
+                <div className="text-l">Center</div>
                 <InputNumber
                   label="x"
                   value={circleCenter.x}
@@ -278,7 +256,7 @@ const Properties = observer(() => {
               </div>
 
               <div>
-                <div className="text-xl">Radius</div>
+                <div className="text-l">Radius</div>
                 <InputNumber
                   label="R"
                   value={circleRadius}
@@ -291,7 +269,7 @@ const Properties = observer(() => {
           {entity.name === "Ellipse" && (
             <div>
               <div className="flex flex-col gap-4 mb-3">
-                <div className="text-xl">Center</div>
+                <div className="text-l">Center</div>
                 <InputNumber
                   label="x"
                   value={ellipseCenter.x}
@@ -307,12 +285,10 @@ const Properties = observer(() => {
                   value={ellipseCenter.z}
                   onChange={(value) => handleEllipseCenterChange("z", value)}
                 />
-                {/* <InputNumber label="x" value={ellipseCenter.x} />
-                <InputNumber label="y" value={ellipseCenter.y} />
-                <InputNumber label="z" value={ellipseCenter.z} /> */}
+                
               </div>
               <div className="flex flex-col gap-4 mb-3 w-full">
-                <div className="text-xl">Radius</div>
+                <div className="text-l">Radius</div>
                 <InputNumber
                   label="Rx"
                   value={Rx}
@@ -323,8 +299,7 @@ const Properties = observer(() => {
                   value={Ry}
                   onChange={handleEllipseRadiusYChange}
                 />
-                {/* <InputNumber label="Rx" value={Rx} />
-                <InputNumber label="Ry" value={Ry} /> */}
+               
               </div>
             </div>
           )}
@@ -332,7 +307,7 @@ const Properties = observer(() => {
             <div>
               {polylinePoints.map((point, index) => (
                 <div key={index} className="flex flex-col gap-4 mb-3">
-                  <div className="text-xl">Point {index + 1}</div>
+                  <div className="text-l">Point {index + 1}</div>
                   <InputNumber
                     label="x"
                     value={point.x}
@@ -356,16 +331,7 @@ const Properties = observer(() => {
                   />
                 </div>
               ))}
-              {/* {Array.from({ length: (points.length - 6) / 3 }).map(
-                (_, index) => (
-                  <div key={index} className="flex flex-col gap-4 mb-3">
-                    <div className="text-xl">Point {index + 1}</div>
-                    <InputNumber label="x" value={getCoordinates(index).x} />
-                    <InputNumber label="y" value={getCoordinates(index).y} />
-                    <InputNumber label="z" value={getCoordinates(index).z} />
-                  </div>
-                )
-              )} */}
+              
             </div>
           )}
           <Button
@@ -374,7 +340,7 @@ const Properties = observer(() => {
             entityID={entity.uuid}
             handleClick={handleUpdate}
           />
-          <div className="text-xl">Color</div>
+          <div className="text-l">Color</div>
           <ColorComponent
             value={rgbToHex(color.r, color.g, color.b)}
             setColor={(value) => {
@@ -383,9 +349,7 @@ const Properties = observer(() => {
             opacity={opacity}
             handleOpacity={handleOpacity}
           />
-          {/* <div>
-            <input type="color" />
-          </div> */}
+          
           <Button
             icon={<GrFormViewHide />}
             name="Hide"
@@ -400,7 +364,7 @@ const Properties = observer(() => {
           />
         </>
       ) : (
-        <div className="text-xl flex bg-transparent items-center">Select a shape to see its properties.</div>
+        <div className=" flex bg-transparent items-center">Select a shape to see its properties.</div>
       )}
     </div>
   );
