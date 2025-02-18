@@ -70,13 +70,14 @@ const Navbar = ({ onUpload }) => {
   };
 
   // Helper function to check if a shape is the selected one
-  const isSelected = (shape) => shapeStore.Entity === shape;
+  const isSelected = (shape) => shapeStore.selectedShape === shape;
+  console.log(isSelected)
 
   return (
     <div className="flex justify-start gap-2 h-18">
       <div className="flex gap-2 p-2 rounded bg-gray-200">
         <div
-          className={`btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
+          className={`btn hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
             "Line"
           ) ? "bg-blue-500 text-white" : ""}`}
           onClick={(e) => handleNavbarClick(e, "Line")}
@@ -85,7 +86,7 @@ const Navbar = ({ onUpload }) => {
           Line
         </div>
         <div
-          className={`btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
+          className={`btn  hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
             "Circle"
           ) ? "bg-blue-500 text-white" : ""}`}
           onClick={(e) => handleNavbarClick(e, "Circle")}
@@ -94,7 +95,7 @@ const Navbar = ({ onUpload }) => {
           Circle
         </div>
         <div
-          className={`btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
+          className={`btn hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
             "Ellipse"
           ) ? "bg-blue-500 text-white" : ""}`}
           onClick={(e) => handleNavbarClick(e, "Ellipse")}
@@ -103,7 +104,7 @@ const Navbar = ({ onUpload }) => {
           Ellipse
         </div>
         <div
-          className={`btn bg-gray-200 hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
+          className={`btn hover:bg-white font-semibold py-2 px-4 rounded flex flex-col items-center justify-center ${isSelected(
             "Polyline"
           ) ? "bg-blue-500 text-white" : ""}`}
           onClick={(e) => handleNavbarClick(e, "Polyline")}
