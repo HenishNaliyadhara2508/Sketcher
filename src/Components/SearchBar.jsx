@@ -8,33 +8,27 @@ import { FaRegCircle } from "react-icons/fa";
 import { TbOvalVertical } from "react-icons/tb";
 import { PiPolygonLight } from "react-icons/pi";
 import { observer } from "mobx-react";
-import {shapeStore} from "../Store";
-
-import Line from "../Utils/Line";
-import Circle from "../Utils/Circle";
-import Ellipse from "../Utils/Ellipse";
-import Polyline from "../Utils/Polyline";
+import { shapeStore } from "../Store";
+// Assuming this component is used to display shape info
 
 const SearchBar = observer(() => {
   const shapes = shapeStore.shapes;
-  console.log(shapes, "shapes");
-
-  // State for collapsing/expanding the "My file" section
+  const [searchTerm, setSearchTerm] = useState("");
   const [isFileExpanded, setFileExpanded] = useState(false);
 
-  const createShapeInstance = (name) => {
-    switch (name) {
-      case "Line":
-        return new Line();
-      case "Circle":
-        return new Circle();
-      case "Ellipse":
-        return new Ellipse();
-      case "Polyline":
-        return new Polyline();
-      default:
-        return null;
-    }
+  // Filter shapes based on the search term
+  const filteredShapes = shapes.filter((shape) =>
+    shape.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handle search term change
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value); // Update search term state on input change
+  };
+
+  // Handle shape click to set it as the current entity
+  const handleShapeClick = (shape) => {
+    shapeStore.setEntity(shape);
   };
 
   const getShapeIcon = (name) => {
@@ -51,44 +45,43 @@ const SearchBar = observer(() => {
         return null;
     }
   };
-
   const toggleVisibility = (shape) => {
     // Toggle visibility for the shape
     shape.visible = !shape.visible;
 
-    // For Line, Circle, and Ellipse, check if they have a mesh property and toggle it
     if (shape.mesh) {
       shape.mesh.visible = shape.visible;
     }
 
-    // For Polyline, check if it has a 'line' property and toggle its visibility
     if (shape.line) {
       shape.line.visible = shape.visible;
     }
 
-    // If you are using any group, you can toggle its visibility as well
     if (shape.group) {
       shape.group.visible = shape.visible;
     }
   };
-
-  // Set the current entity when a shape is clicked
-  const handleShapeClick = (shape) => {
-    shapeStore.setEntity(shape); // Set the selected shape as the current entity
-  };
-
-  // Handle the toggle for expanding and collapsing the "My file" panel
+  // Handle expanding/collapsing the "My file" section
   const handleToggleFile = () => {
-    setFileExpanded((prev) => !prev); // Toggle the file state
-  }
+    setFileExpanded((prev) => !prev);
+  };
 
   return (
     <div className="flex flex-col rounded min-h-[94vh]">
-      <div className="flex justify-between p-2 rounded">
-        <div>List of Created Objects</div>
-        <div>
-          <IoSearch />
-        </div>
+        <div className="mx-2 text-xl">List of Created Objects</div>
+      <div className="flex justify-between p-2 rounded gap-2">
+      
+        
+          <IoSearch className="text-xl items-center"/>
+        
+        <input
+          className="w-full px-3 py-2 border rounded-md"
+          type="text"
+          placeholder="Search for shapes..."
+          value={searchTerm}
+          onChange={handleSearch} // Handle search input change
+        />
+        
       </div>
       <hr />
 
@@ -108,52 +101,108 @@ const SearchBar = observer(() => {
         <div>
           {/* List of created shapes */}
           <div className="mt-4">
-            {shapes.length > 0 ? (
-              shapes.map((shape) => {
-                const isSelected = shape === shapeStore.Entity(); // Check if the shape is selected
+            {searchTerm === "" // If no search term, show all shapes
+              ? shapes.map((shape) => {
+                  const isSelected = shape === shapeStore.Entity();
 
-                return (
-                  <div
-                    key={shape.id}
-                    className={`flex justify-between m-2 rounded hover:bg-white p-2 ${
-                      isSelected ? "bg-blue-500" : ""
-                    }`}
-                    onClick={() => handleShapeClick(shape)} // Set the current entity on click
-                  >
-                    <div className="flex items-center gap-2">
-                      <div>{getShapeIcon(shape.name)}</div>
-                      <div>{shape.name}</div>
-                    </div>
-                    <div className="flex space-x-2">
-                      {shape.visible ? (
-                        <IoEyeOutline
+                  return (
+                    <div
+                      key={shape.id}
+                      className={`flex justify-between m-2 rounded hover:bg-white p-2 ${
+                        isSelected ? "bg-blue-500" : ""
+                      }`}
+                      onClick={() => handleShapeClick(shape)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {/* Shape icon and name */}
+                        <div>{getShapeIcon(shape.name)}</div>
+                        <div>{shape.name}</div>
+                        {/* Show shape number */}
+                        <div className="ml-2 text-gray-500">
+                          {console.log(shapeStore.getShapeNumberByNameAndUUID(
+                            shape.name,
+                            shape.uuid
+                          ))
+                          }
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        {shape.visible ? (
+                          <IoEyeOutline
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleVisibility(shape);
+                            }}
+                          />
+                        ) : (
+                          <IoEyeOffOutline
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleVisibility(shape);
+                            }}
+                          />
+                        )}
+                        <RiDeleteBinLine
                           onClick={(e) => {
-                            e.stopPropagation(); 
-                            toggleVisibility(shape);
+                            e.stopPropagation();
+                            shapeStore.removeEntity(shape.uuid);
+                            shapeStore.setEntity(null);
                           }}
                         />
-                      ) : (
-                        <IoEyeOffOutline
+                      </div>
+                    </div>
+                  );
+                })
+              : filteredShapes.map((shape) => {
+                  const isSelected = shape === shapeStore.Entity();
+
+                  return (
+                    <div
+                      key={shape.id}
+                      className={`flex justify-between m-2 rounded hover:bg-white p-2 ${
+                        isSelected ? "bg-blue-500" : ""
+                      }`}
+                      onClick={() => handleShapeClick(shape)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {/* Shape icon and name */}
+                        <div>{getShapeIcon(shape.name)}</div>
+                        <div>{shape.name}</div>
+                        {/* Show shape number */}
+                        <div className="ml-2 text-gray-500">
+                          {shapeStore.getShapeNumberByNameAndUUID(
+                            shape.name,
+                            shape.uuid
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        {shape.visible ? (
+                          <IoEyeOutline
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleVisibility(shape);
+                            }}
+                          />
+                        ) : (
+                          <IoEyeOffOutline
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleVisibility(shape);
+                            }}
+                          />
+                        )}
+                        <RiDeleteBinLine
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent triggering handleShapeClick
-                            toggleVisibility(shape);
+                            e.stopPropagation();
+                            shapeStore.removeEntity(shape.uuid);
+                            shapeStore.setEntity(null);
                           }}
                         />
-                      )}
-                      <RiDeleteBinLine
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent triggering handleShapeClick
-                          shapeStore.removeEntity(shape.uuid);
-                          shapeStore.setEntity(null);
-                        }}
-                      />
+                      </div>
                     </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="m-2 text-gray-500">No shapes created yet.</div>
-            )}
+                  );
+                })}
           </div>
         </div>
       )}
